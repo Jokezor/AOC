@@ -1,8 +1,8 @@
 # Keep an array of the operations
-# Go throough the array instructions sequentially. Store the index in a dict. If there already is that ind in the dict,
+# Go through the array instructions sequentially. Store the index in a dict. If there already is that ind in the dict,
 # then print out the accumulator
 # while(key not in set)
-# Need to find combination of 
+# Need to find combination of
 
 def read_file(file_name: str) -> list:
     return [{line.strip('\n').split(' ')[0]: line.strip('\n').split(' ')[1]} for line in open(file_name, 'r')]
