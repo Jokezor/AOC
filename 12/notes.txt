@@ -1,0 +1,33 @@
+Using math.ceil
+
+
+{'x': -23835, 'y': -13728} {'x': 29, 'y': 42}
+{'x': -23835, 'y': -13728} {'x': 29, 'y': 42}
+37563 71
+796 37634
+
+Using float:
+
+{'x': -23835, 'y': -13728} {'x': 29, 'y': 42}
+{'x': -23835, 'y': -13728} {'x': 29, 'y': 42}
+37563 71
+796 37634
+
+Using round:
+
+{'x': -24417, 'y': -15029} {'x': 26, 'y': 37}
+{'x': -24417, 'y': -15029} {'x': 26, 'y': 37}
+39446 63
+796 39509
+
+
+
+Not using any rounding:
+{'x': -24416.99999999996, 'y': -15029.0} {'x': 25.99999999999991, 'y': 37.000000000000085}
+{'x': -24416.99999999996, 'y': -15029.0} {'x': 25.99999999999991, 'y': 37.000000000000085}
+39445.999999999956 63.0
+796.000000000005 39508.999999999956
+
+Rounding should work or just round at the end.
+But we should work with only rotations with 90 degrees so actually rounding in every round will mitigate rounding errors which can creep up.
+Correct answer is using round() and 39509
