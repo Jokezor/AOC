@@ -1,6 +1,6 @@
-import Data.List
+import Data.List as L
 import Data.Char
-import Data.Set (Set, fromList, intersection, elemAt)
+import Data.Set as S
 
 
 main :: IO ()
@@ -11,29 +11,26 @@ main = do
   let groupLines = groupThree splitLines
 
   -- Make a set from the groups
-  let duplicate = (map getIntersection groupLines)
+  let duplicate = (L.map getIntersection groupLines)
 
   print duplicate
 
   -- Convert to ascii number order
-  print (sum (map convertToPriority duplicate))
+  print (sum (L.map convertToPriority duplicate))
 
 groupThree :: [a] -> [[a]]
 groupThree [] = []
-groupThree ls = (take 3 ls):groupThree (drop 3 ls)
+groupThree ls = (L.take 3 ls):groupThree (L.drop 3 ls)
 
 convertToPriority :: Char -> Int
-convertToPriority item = 
-  if isUpper item
-    then ord item - (ord 'A' - 27)
-  else
-    ord item - (ord 'a' - 1)
-
+convertToPriority item
+  | isUpper item = ord item - (ord 'A' - 27)
+  | otherwise = ord item - (ord 'a' - 1)
 
 getIntersection :: [String] -> Char
 getIntersection [first, second, third] =
-  elemAt 0 (intersection (intersection (fromList first) (fromList second)) (fromList third))
-
-assertEqual :: (String, String) -> Bool
-assertEqual (first, second) = length(first) == length(second)
+  S.findMin (c1 `S.intersection` (c2 `S.intersection` c3))
+  where c1 = S.fromList first
+        c2 = S.fromList second
+        c3 = S.fromList third
 
