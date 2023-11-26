@@ -1,4 +1,4 @@
-f = open("example_input.txt", "r")
+f = open("input.txt", "r")
 patch = [[int(tree) for tree in line.strip()] for line in f.readlines()]
 
 N = len(patch)
@@ -11,9 +11,9 @@ def any_taller(height, trees):
     seen_trees = 0
 
     for tree in trees:
+        seen_trees += 1
         if tree >= height:
             break
-        seen_trees += 1
 
     return max(1, seen_trees)
 
@@ -33,19 +33,15 @@ for i in range(1, N - 1):
         left_seen = any_taller(tree, current_row[0:j:][::-1])
 
         # Check right
-        right_seen = any_taller(tree, current_row[j + 1 :][::-1])
+        right_seen = any_taller(tree, current_row[j + 1 :])
 
         # Check up
         up_seen = any_taller(tree, current_col[0:i][::-1])
 
         # Check down
-        down_seen = any_taller(tree, current_col[i + 1 :][::-1])
+        down_seen = any_taller(tree, current_col[i + 1 :])
 
         scenic_score = left_seen * right_seen * up_seen * down_seen
-
-        if i == 3 and j == 2:
-            print(tree, scenic_score)
-            print(left_seen, right_seen, up_seen, down_seen)
 
         if scenic_score > max_scenic_score:
             max_scenic_score = scenic_score
