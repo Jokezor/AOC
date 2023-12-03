@@ -18,11 +18,41 @@ ll get_number(string row, pair<int, int> coords) {
   return stoi(number);
 }
 
+struct hash_pair {
+  template <class T1, class T2> size_t operator()(const pair<T1, T2> &p) const {
+    auto hash1 = hash<T1>{}(p.first);
+    auto hash2 = hash<T2>{}(p.second);
+
+    if (hash1 != hash2) {
+      return hash1 ^ hash2;
+    }
+
+    // If hash1 == hash2, their XOR is zero.
+    return hash1;
+  }
+};
+
+struct hash_triplet {
+  template <class T1, class T2, class T3>
+  size_t operator()(const tuple<T1, T2, T3> &p) const {
+    auto hash1 = hash<T1>{}(get<0>(p));
+    auto hash2 = hash<T2>{}(get<1>(p));
+    auto hash3 = hash<T3>{}(get<2>(p));
+
+    size_t seed = 0;
+    seed ^= hash1 + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= hash2 + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= hash3 + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+
+    return seed;
+  }
+};
+
 void solution() {
   string row;
   ll ans = 0;
 
-  map<pair<int, int>, pair<int, int>> numbers;
+  unordered_map<pair<int, int>, pair<int, int>, hash_pair> numbers;
   vector<pair<int, int>> symbols;
   vector<string> rows;
 
@@ -82,15 +112,13 @@ void solution() {
     row_number++;
   }
 
-  set<tuple<int, int, int>> part_numbers;
-
   // Go through all symbols and check the 8 directions.
   for (auto s : symbols) {
     ll x = s.first;
     ll y = s.second;
 
     bool is_gear = rows[x][y] == '*';
-    set<tuple<int, int, int>> adjacent_numbers;
+    unordered_set<tuple<int, int, int>, hash_triplet> adjacent_numbers;
 
     // W
     if (numbers.find({x, y - 1}) != numbers.end()) {

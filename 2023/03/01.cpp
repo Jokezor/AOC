@@ -6,11 +6,25 @@
 
 using namespace std;
 
+struct hash_pair {
+  template <class T1, class T2> size_t operator()(const pair<T1, T2> &p) const {
+    auto hash1 = hash<T1>{}(p.first);
+    auto hash2 = hash<T2>{}(p.second);
+
+    if (hash1 != hash2) {
+      return hash1 ^ hash2;
+    }
+
+    // If hash1 == hash2, their XOR is zero.
+    return hash1;
+  }
+};
+
 void solution() {
   string row;
   ll ans = 0;
 
-  map<pair<int, int>, pair<int, int>> numbers;
+  unordered_map<pair<int, int>, pair<int, int>, hash_pair> numbers;
   vector<pair<int, int>> symbols;
   vector<string> rows;
 
