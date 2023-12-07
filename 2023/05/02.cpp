@@ -80,8 +80,8 @@ void solution() {
     int num_end = -1;
     string number = "";
 
-    if (row.find("seed-to-soil") != std::string::npos) {
-      type = "seed-to-soil";
+    if (row.find("map:") != std::string::npos) {
+      type = "map";
     };
 
     // Simply process directly.
@@ -130,78 +130,101 @@ void solution() {
   }
 
   // Add default
-  // cout << "original:"
-  //      << "\n";
   for (int i = 0; i < seeds.size(); i += 2) {
     ll initial_seed = seeds[i];
     ll seed_range = seeds[i + 1];
     seed_maps[initial_seed] = seed_range;
-    // cout << initial_seed << ":" << seed_range << "\n";
   }
-  // cout << "\n\n";
 
   // Check all seeds.
   for (int i = 0; i < 7; i++) {
     vector<vector<ll>> current_maps = maps[i];
     map<ll, ll> new_map;
 
-    // cout << i << "\n\n\n";
-    for (auto seed_map : seed_maps) {
-      ll seed_start = seed_map.first;
-      ll seed_range = seed_map.second;
-      ll seed_max = seed_start + seed_range - 1;
-      set<ll> matched_seeds;
+    // What if we did a vector seed_maps? Its to allow
+    // us to add skipped regions.
+    // Second thinking is to have a vector of maps
+    // To keep track of start and end of the range.
+    // Now I only have start and range.
+    // When I map only the middle: 1,2,[3,4],5,6
+    // How can I update it?
+    // One way is to push them to a temporary vector
+    // Like so:
+    // For count below: We push seed_start: count_below
+    // For count above: We push seed_max - count_above: count_above
+    // Resulting in:
+    // [{0, 2}, {4, 2}]
+    // Then we essentially do a while stack:
+    // seed_map = stack.top()
+    // stack.pop()
+    // And then check the seeds for that popped seed_map etc.
+    // Then I do not need to push them separately to the new_map.
+    // It will be done if they found no mapping of their own.
+    for (pair<ll, ll> source_seed_map : seed_maps) {
 
-      // cout << seed_map.first << ":" << seed_map.second << "\n";
+      stack<pair<ll, ll>> seed_stack;
 
-      for (vector<ll> current_map : current_maps) {
-        ll destination_start = current_map[0];
-        ll source_start = current_map[1];
-        ll source_range = current_map[2];
-        ll source_max = source_start + source_range - 1LL;
-        ll diff = destination_start - source_start;
+      seed_stack.push(source_seed_map);
+      ll source_seed_range = source_seed_map.second;
+      set<pair<ll, ll>> unmatched_seeds;
 
-        ll count_above = max(seed_max - source_max, 0LL);
-        ll count_below = max(source_start - seed_start, 0LL);
+      while (!seed_stack.empty()) {
+        pair<ll, ll> seed_map = seed_stack.top();
+        seed_stack.pop();
+        ll seed_start = seed_map.first;
+        ll seed_range = seed_map.second;
+        ll seed_max = max(seed_start, seed_start + seed_range - 1);
 
-        ll range_to_include = seed_range;
+        for (vector<ll> current_map : current_maps) {
+          ll destination_start = current_map[0];
+          ll source_start = current_map[1];
+          ll source_range = current_map[2];
+          ll source_max = max(source_start, source_start + source_range - 1LL);
+          ll diff = destination_start - source_start;
 
-        if (seed_max < source_start || seed_start > source_max) {
-          continue;
+          ll count_above = max(seed_max - source_max, 0LL);
+          ll count_below = max(source_start - seed_start, 0LL);
+
+          ll range_to_include = seed_range - (count_above + count_below);
+
+          if (seed_max < source_start || seed_start > source_max) {
+            continue;
+          }
+
+          // Remove the tops into a new seed range
+          if (count_above > 0) {
+            seed_stack.push({(seed_max - count_above) + 1LL, count_above});
+          }
+          // Remove the bottoms into a new seed range
+          if (count_below > 0) {
+            seed_stack.push({seed_start, count_below});
+          }
+
+          if (range_to_include > 0) {
+            new_map[seed_start + diff + count_below] =
+                max(new_map[seed_start + diff + count_below], range_to_include);
+            source_seed_range -= range_to_include;
+            seed_range -= range_to_include;
+          }
         }
-
-        // Remove the tops into a new seed range
-        if (count_above > 0) {
-          range_to_include -= count_above;
-          new_map[(seed_max - count_above) + 1] =
-              max(new_map[(seed_max - count_above) + 1], count_above);
-          matched_seeds.insert(seed_start);
-        }
-        // Remove the bottoms into a new seed range
-        if (count_below > 0) {
-          range_to_include -= count_below;
-          new_map[seed_start] = max(new_map[seed_start], count_below);
-          matched_seeds.insert(seed_start);
-        }
-
-        if (range_to_include > 0) {
-          new_map[seed_start + diff + count_below] =
-              max(new_map[seed_start + diff + count_below], range_to_include);
-          matched_seeds.insert(seed_start);
+        if (seed_range > 0) {
+          unmatched_seeds.insert({seed_start, seed_range});
         }
       }
-      if (matched_seeds.find(seed_start) == matched_seeds.end()) {
-        new_map[seed_start] = max(new_map[seed_start], seed_range);
+      if (source_seed_range > 0) {
+        for (pair<ll, ll> unmatched_seed : unmatched_seeds) {
+          new_map[unmatched_seed.first] = unmatched_seed.second;
+        }
       }
     }
     // Add in new map
-    seed_maps = new_map;
+    if (!new_map.empty()) {
+      seed_maps = new_map;
+    }
   }
 
-  cout << "final: \n\n";
   for (auto seed_map : seed_maps) {
     ans = min(ans, seed_map.first);
-    cout << seed_map.first << ":" << seed_map.second << "\n";
   }
 
   cout << ans << "\n";
