@@ -6,6 +6,16 @@
 
 using namespace std;
 
+ll gcd(ll x, ll y) {
+  if (y) {
+    return gcd(y, x % y);
+  } else {
+    return x;
+  }
+}
+
+ll lcm(ll x, ll y) { return (x / gcd(x, y)) * y; }
+
 ll getRank(vector<ll> hand) {
   vector<ll> counter(15);
 
@@ -102,7 +112,7 @@ struct hash_triplet {
 
 void solution() {
   string row;
-  ll ans = 0;
+  ll ans = 999999999999999;
 
   vector<string> rows;
 
@@ -150,32 +160,78 @@ void solution() {
     if (node.first[2] == 'A') {
       search_nodes.push_back(node.first);
       search_nodes_path.push_back(node.second);
+    } else if (node.first[2] == 'Z') {
+      cout << node.first << "\n";
     }
   }
-  ll final_nodes = 0;
+
+  vector<set<ll>> cycles(search_nodes.size());
+
+  ll n = search_nodes.size();
+
+  // Find no Z in a whole cycle.
+  // Which means that I probably end prematurely
 
   // Search until all nodes are final nodes
-  while (final_nodes != search_nodes.size()) {
-    for (char c : instructions) {
-      ll current_final_nodes = 0;
-      // Print out to see what cycles are being repeated.
-      // There should be a solution, so should not see the same
-      // nodes repeated over and over.
-      for (int i = 0; i < search_nodes.size(); i++) {
+  for (int i = 0; i < n; i++) {
+    // How to know if I have catched a cycle?
+    // 1. We need to have passed all instructions
+    // 2. The starting node is the same as the original starting node.
+    //
+    // So essentially check until we are back at start node
+    // With a whole new instruction to parse.
+    // Then we know we are at the end.
+    // But it might be a cycle in the middle etc.
+    //
+    // So we should track all the start_nodes we have searched.
+    set<string> searched_nodes;
+    vector<string> tracked_nodes;
+    string current_node = search_nodes[i];
+    pair<string, string> search_node_path = search_nodes_path[i];
+    ll steps = 0;
+
+    while (searched_nodes.find(current_node) == searched_nodes.end()) {
+      searched_nodes.insert(current_node);
+      for (char c : instructions) {
+        // We insert current here to mark this is being searched.
         if (c == 'L') {
-          search_nodes[i] = search_nodes_path[i].first;
+          current_node = search_node_path.first;
         } else if (c == 'R') {
-          search_nodes[i] = search_nodes_path[i].second;
+          current_node = search_node_path.second;
         }
-        search_nodes_path[i] = graph[search_nodes[i]];
-        if (search_nodes[i][2] == 'Z') {
-          current_final_nodes++;
+        search_node_path = graph[current_node];
+        steps++;
+        if (current_node[2] == 'Z') {
+          cycles[i].insert(steps);
         }
       }
-      ans++;
-      if (current_final_nodes == search_nodes.size()) {
-        final_nodes = current_final_nodes;
-        break;
+    }
+  }
+
+  // Now take the smallest from each cycle
+  // And take the lcm.
+  for (int i = 0; i < cycles.size(); i++) {
+    set<ll> cycle = cycles[i];
+    ll steps = 0;
+    for (ll ind : cycle) {
+      steps = ind;
+      // Should check how many we found.
+      // We should not include none found.
+      // Binary search for the next
+      int j = 0;
+      for (; j < cycles.size(); j++) {
+        if (i != j) {
+          set<ll>::iterator itlow = cycles[j].lower_bound(ind);
+          if (itlow != cycles[j].end()) {
+            steps = lcm(*itlow, steps);
+          } else {
+            break;
+          }
+        }
+      }
+      // Reached all
+      if (j == cycles.size()) {
+        ans = min(ans, steps);
       }
     }
   }
