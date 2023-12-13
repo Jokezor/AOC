@@ -109,6 +109,16 @@ struct hash_triplet {
   }
 };
 
+bool is_mirror_horizontal(const vector<string> &pattern, int row) {
+  int n = pattern.size();
+  for (int i = 0; i < pattern[0].length(); i++) {
+    if (pattern[row][i] != pattern[n - row - 1][i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 void solution() {
   string row;
   ll ans = 0;
@@ -124,23 +134,15 @@ void solution() {
     input.close();
   }
 
-  // What we should do is:
-  // 1. Find palindromes.
-  // For each row, find which index has a palindrome.
-  // So for each row, we check if the start and end substring
-  // makes a palindrome.
-  // If not, then we shrink index and restart.
-
   int pattern_nums = 1;
-
   for (int i = 0; i < rows.size(); i++) {
     if (rows[i] == "") {
       pattern_nums++;
     }
   }
 
+  // Get the patterns grouped.
   vector<vector<string>> patterns(pattern_nums);
-
   int row_number = 0;
   for (int i = 0; i < rows.size(); i++) {
     if (rows[i] == "") {
@@ -150,10 +152,9 @@ void solution() {
     }
   }
 
-  vector<int> mirror_points;
   vector<vector<string>> col_patterns;
   // Create columns
-  for (int i = 0; i < pattern_nums; i += 2) {
+  for (int i = 0; i < pattern_nums; i++) {
     vector<string> pattern = patterns[i];
     vector<string> col_pattern(pattern[0].length());
 
@@ -165,148 +166,61 @@ void solution() {
     col_patterns.push_back(col_pattern);
   }
 
-  // Instead, check if each number is mirrored.
-  for (int i = 1; i < pattern_nums; i += 2) {
-    cout << i << "\n";
+  for (int i = 0; i < pattern_nums; i++) {
     vector<string> pattern = patterns[i];
+    vector<string> col_pattern = col_patterns[i];
+
     int n = pattern.size();
     int break_point = 0;
-    for (int i = 0; i < n; i++) {
-      if (pattern[i] == pattern[n - i]) {
-        break_point = i;
+
+    // So instead, start at each row,
+    // Check if below row and above row match.
+    // If so, continue until one is 0 or n.
+    // Meaning we hit the edge.
+    for (int j = 0; j < n - 1; j++) {
+      // Check if all above or all below match.
+      bool found = false;
+      int l = j + 1;
+      int k = j;
+      while (pattern[l] == pattern[k]) {
+        l++;
+        k--;
+        if (l == n || k < 0) {
+          found = true;
+          break;
+        }
+      }
+      if (found) {
+        break_point = j + 1;
       }
     }
     if (break_point > 0) {
-      mirror_points.push_back(break_point);
+      ans += break_point * 100;
+      break_point = 0;
+    }
+
+    int m = col_pattern.size();
+
+    for (int j = 0; j < m - 1; j++) {
+      bool found = false;
+      int l = j + 1;
+      int k = j;
+
+      while (col_pattern[k] == col_pattern[l]) {
+        l++;
+        k--;
+
+        if (l == n || k < 0) {
+          break_point = ceil((double)(j + m - 1) / 2);
+          cout << break_point << "\n";
+          break;
+        }
+      }
+    }
+    if (break_point > 0) {
       ans += break_point * 100;
     }
   }
-
-  for (vector<string> pattern : col_patterns) {
-    int n = pattern.size();
-    int break_point = 0;
-    for (int i = 0; i < n; i++) {
-      cout << pattern[i] << "\n";
-      if (pattern[i] == pattern[n - i]) {
-        break_point = i + 1;
-      }
-    }
-    if (break_point > 0) {
-      mirror_points.push_back(break_point);
-      ans += break_point;
-    }
-  }
-
-  // Now check each column.
-
-  // For each character in a row,
-  // Check current character + right until end
-  // Record any palindromes found.
-  // Check all left as well.
-  // Then we can instead for each row:
-  //
-  // Check if any other row has the same index as the
-  // palindrome start and end.
-  //
-  // vector<vector<set<pair<int, int>>>> row_palindromes;
-  //
-  // for (int i = 0; i < patterns.size(); i += 2) {
-  //   vector<string> pattern = patterns[i];
-  //   vector<set<pair<int, int>>> pattern_palindromes;
-  //
-  //   // Find all palindromes per row
-  //   for (string row : pattern) {
-  //     set<pair<int, int>> current_palindromes;
-  //     for (int i = 0; i < row.length(); i++) {
-  //       for (int j = 2; j + i <= row.length(); j++) {
-  //         if (isPalindrome(row.substr(i, j))) {
-  //           current_palindromes.insert({i, i + j - 1});
-  //         }
-  //       }
-  //     }
-  //     pattern_palindromes.push_back(current_palindromes);
-  //   }
-  //   row_palindromes.push_back(pattern_palindromes);
-  // }
-  // //
-  // // // Same for columns
-  // vector<vector<set<pair<int, int>>>> column_palindromes;
-  // //
-  // for (int i = 1; i < patterns.size(); i += 2) {
-  //   vector<string> pattern = patterns[i];
-  //   vector<set<pair<int, int>>> pattern_palindromes;
-  //
-  //   // Find all palindromes per column
-  //   for (int col = 0; col < pattern[0].length(); col++) {
-  //     set<pair<int, int>> current_palindromes;
-  //
-  //     // Need to scan for each row.
-  //     for (int start = 0; start < pattern.size(); start++) {
-  //       // Start with one char
-  //       string current = "";
-  //       current += pattern[start][col];
-  //       for (int end = start + 1; end < pattern.size(); end++) {
-  //         current += pattern[end][col];
-  //         if (isPalindrome(current)) {
-  //           current_palindromes.insert({start, end});
-  //           // cout << current << "\n";
-  //         }
-  //       }
-  //     }
-  //     pattern_palindromes.push_back(current_palindromes);
-  //   }
-  //   column_palindromes.push_back(pattern_palindromes);
-  // }
-  //
-  // // every even is row
-  // // every odd is column
-  //
-  // for (vector<set<pair<int, int>>> pattern_palindrome : row_palindromes) {
-  //   int n = pattern_palindrome.size();
-  //   // seg fault?
-  //   set<pair<int, int>> palindrome_set = pattern_palindrome[0];
-  //
-  //   for (pair<int, int> palindrome : palindrome_set) {
-  //     int j = 1;
-  //     for (; j < n; j++) {
-  //       set<pair<int, int>> palindrome_set = pattern_palindrome[j];
-  //
-  //       if (palindrome_set.find(palindrome) == palindrome_set.end()) {
-  //         break;
-  //       }
-  //     }
-  //     if (j == n) {
-  //
-  //       ans += ceil((double)(palindrome.first + palindrome.second) / 2);
-  //       break;
-  //     }
-  //   }
-  //   // cout << ans << "\n\n";
-  // }
-  //
-  // for (vector<set<pair<int, int>>> pattern_palindrome : column_palindromes) {
-  //   int n = pattern_palindrome.size();
-  //   // seg fault?
-  //   set<pair<int, int>> palindrome_set = pattern_palindrome[0];
-  //
-  //   for (pair<int, int> palindrome : palindrome_set) {
-  //     int j = 1;
-  //     for (; j < n; j++) {
-  //       set<pair<int, int>> palindrome_set = pattern_palindrome[j];
-  //
-  //       if (palindrome_set.find(palindrome) == palindrome_set.end()) {
-  //         break;
-  //       }
-  //       // cout << palindrome.first << ":" << palindrome.second << "\n";
-  //     }
-  //     if (j == n) {
-  //       cout << palindrome.first << ":" << palindrome.second << "\n";
-  //       ans += 100 * ceil((double)(palindrome.first + palindrome.second) /
-  //       2); break;
-  //     }
-  //   }
-  //   // cout << ans << "\n\n";
-  // }
 
   printf("%lld\n", ans);
 }
