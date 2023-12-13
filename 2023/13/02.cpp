@@ -125,7 +125,7 @@ void solution() {
 
   vector<string> rows;
 
-  ifstream input("input.txt");
+  ifstream input("example_input_2.txt");
 
   if (input.is_open()) {
     while (getline(input, row)) {
@@ -178,20 +178,28 @@ void solution() {
     // If so, continue until one is 0 or n.
     // Meaning we hit the edge.
     for (int j = 0; j < n - 1; j++) {
-      // Check if all above or all below match.
+      vector<string> pattern_copy(pattern);
       bool found = false;
-      int l = j + 1;
-      int k = j;
-      while (pattern[l] == pattern[k]) {
-        l++;
-        k--;
-        if (l == n || k < 0) {
-          found = true;
+      // Replace pattern[j] one character at a time.
+      for (int smudge = 0; smudge < pattern[j].length(); smudge++) {
+        pattern_copy[j][smudge] = pattern_copy[j][smudge] == '#' ? '.' : '#';
+        int l = j + 1;
+        int k = j;
+        while (pattern_copy[l] == pattern_copy[k]) {
+          l++;
+          k--;
+          if (l == n || k < 0) {
+            found = true;
+            break;
+          }
+        }
+        if (found) {
+          break_point = j + 1;
           break;
         }
       }
       if (found) {
-        break_point = j + 1;
+        break;
       }
     }
     if (break_point > 0) {
