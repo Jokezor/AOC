@@ -125,7 +125,8 @@ void solution() {
 
   vector<string> rows;
 
-  ifstream input("example_input_2.txt");
+  // Too low.
+  ifstream input("input.txt");
 
   if (input.is_open()) {
     while (getline(input, row)) {
@@ -171,43 +172,28 @@ void solution() {
     vector<string> col_pattern = col_patterns[i];
 
     int n = pattern.size();
+    int m = col_pattern.size();
     int break_point = 0;
+    int old_break_point = 0;
 
-    // So instead, start at each row,
-    // Check if below row and above row match.
-    // If so, continue until one is 0 or n.
-    // Meaning we hit the edge.
+    // Get old breakpoint
     for (int j = 0; j < n - 1; j++) {
-      vector<string> pattern_copy(pattern);
+      // Check if all above or all below match.
       bool found = false;
-      // Replace pattern[j] one character at a time.
-      for (int smudge = 0; smudge < pattern[j].length(); smudge++) {
-        pattern_copy[j][smudge] = pattern_copy[j][smudge] == '#' ? '.' : '#';
-        int l = j + 1;
-        int k = j;
-        while (pattern_copy[l] == pattern_copy[k]) {
-          l++;
-          k--;
-          if (l == n || k < 0) {
-            found = true;
-            break;
-          }
-        }
-        if (found) {
-          break_point = j + 1;
+      int l = j + 1;
+      int k = j;
+      while (pattern[l] == pattern[k]) {
+        l++;
+        k--;
+        if (l == n || k < 0) {
+          found = true;
           break;
         }
       }
       if (found) {
-        break;
+        old_break_point = (j + 1) * 100;
       }
     }
-    if (break_point > 0) {
-      ans += break_point * 100;
-      break_point = 0;
-    }
-
-    int m = col_pattern.size();
 
     for (int j = 0; j < m - 1; j++) {
       bool found = false;
@@ -223,10 +209,87 @@ void solution() {
           break;
         }
       }
-      if (found) {
-        break_point = j + 1;
+      if (found && old_break_point == 0) {
+        old_break_point = j + 1;
       }
     }
+
+    // So instead, start at each row,
+    // Check if below row and above row match.
+    // If so, continue until one is 0 or n.
+    // Meaning we hit the edge.
+    for (int j = 0; j < n - 1; j++) {
+      bool found = false;
+      // Replace pattern[j] one character at a time.
+      for (int smudge = 0; smudge < pattern[j].length(); smudge++) {
+        vector<string> pattern_copy(pattern);
+        pattern_copy[j][smudge] = pattern_copy[j][smudge] == '#' ? '.' : '#';
+        for (int o = 0; o < n - 1; o++) {
+          int l = o + 1;
+          int k = o;
+          // cout << pattern_copy[k] << "\n";
+          while (pattern_copy[l] == pattern_copy[k]) {
+            l++;
+            k--;
+            if (l == n || k < 0) {
+              if ((o + 1) * 100 != old_break_point) {
+                found = true;
+              }
+              break;
+            }
+          }
+          if (found) {
+            break_point = o + 1;
+            break;
+          }
+        }
+        if (found) {
+          break;
+        }
+      }
+      if (found) {
+        break;
+      }
+    }
+    if (break_point > 0) {
+      ans += break_point * 100;
+      break_point = 0;
+      continue;
+    }
+
+    for (int j = 0; j < m - 1; j++) {
+      bool found = false;
+      // Replace pattern[j] one character at a time.
+      for (int smudge = 0; smudge < col_pattern[j].length(); smudge++) {
+        vector<string> pattern_copy(col_pattern);
+        pattern_copy[j][smudge] = pattern_copy[j][smudge] == '#' ? '.' : '#';
+        for (int o = 0; o < m - 1; o++) {
+          int l = o + 1;
+          int k = o;
+          while (pattern_copy[l] == pattern_copy[k]) {
+            l++;
+            k--;
+            if (l == m || k < 0) {
+              if (o + 1 != old_break_point) {
+                found = true;
+              }
+              break;
+            }
+          }
+          if (found) {
+            break_point = o + 1;
+            break;
+          }
+        }
+        if (found) {
+          break;
+        }
+      }
+      if (found) {
+        break;
+      }
+    }
+
     if (break_point > 0) {
       ans += break_point;
     }
