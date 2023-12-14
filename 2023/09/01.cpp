@@ -100,8 +100,8 @@ struct hash_triplet {
   }
 };
 
-vector<int> diff_array(vector<int> arr) {
-  vector<int> diff;
+vector<ll> diff_array(vector<ll> arr) {
+  vector<ll> diff;
 
   for (int i = 0; i < arr.size() - 1; i++) {
     diff.push_back(arr[i + 1] - arr[i]);
@@ -111,14 +111,23 @@ vector<int> diff_array(vector<int> arr) {
 }
 
 // Essentially, recursively call diff until 0.
-int get_next(vector<int> arr, int prev) {
-  vector<int> new_arr;
-  for (int i = 0; i < arr.size() - 1; i++) {
-    if (arr[i] != arr[i + 1]) {
-      new_arr = get_next(arr, arr[arr.size() - 1]);
+ll get_next(vector<ll> arr, ll prev) {
+  if (arr.size() <= 1) {
+    return 0;
+  }
+  ll result = prev;
+  vector<ll> new_arr = diff_array(arr);
+
+  int i = 0;
+  for (; i < new_arr.size(); i++) {
+    if (new_arr[i] != 0) {
+      break;
     }
   }
-  return prev + if () {}
+  if (i < new_arr.size()) {
+    result += get_next(new_arr, new_arr[new_arr.size() - 1]);
+  }
+  return result;
 }
 
 void solution() {
@@ -127,7 +136,7 @@ void solution() {
 
   vector<string> rows;
 
-  ifstream input("example_input.txt");
+  ifstream input("input.txt");
 
   if (input.is_open()) {
     while (getline(input, row)) {
@@ -145,20 +154,20 @@ void solution() {
     string num = "";
 
     string row = rows[i];
-    vector<int> num_row;
+    vector<ll> num_row;
 
     for (char c : row) {
       if (c != ' ') {
         num += c;
       } else {
-        num_row.push_back(stoi(num));
+        num_row.push_back(stoll(num));
         num = "";
       }
     }
-    num_row.push_back(stoi(num));
+    num_row.push_back(stoll(num));
 
-    int diff = num_row[1] - num_row[0];
-    cout << diff << "\n";
+    ll diff = num_row[num_row.size() - 1];
+    ans += get_next(num_row, diff);
   }
 
   printf("%lld\n", ans);
