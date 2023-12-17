@@ -136,7 +136,7 @@ void solution() {
 
   vector<string> rows;
 
-  ifstream input("example_input.txt");
+  ifstream input("input.txt");
 
   if (input.is_open()) {
     while (getline(input, row)) {
@@ -189,27 +189,10 @@ void solution() {
     }
   }
 
-  cout << graph[{1, 3}].size() << "\n";
-
-  // Now simply traverse from start.
-  // Do one traversal in each direction BFS.
-  // Where they intersect should be the longest.
-
-  // BFS
-
-  // Need to check which pipe we should use.
-  // Only counts for the one forming a continous loop.
-  // So we should go around the graph until we get to start again.
-  // But how do we know?
-  // What if we do start but end up in another continous loop not connected to
-  // ours?
-
-  // Start one BFS in each 4 directions.
-  // Where they intersect we should have max.
-  // Check what happens for each type of pipe
   bool found = false;
   char loop_pipe = '.';
-  for (char start_pipe : "F|-L") {
+  for (char start_pipe : "F|-LJ7") {
+    // Add both pipes, then traverse only in one direction.
     auto graph_copy = graph;
     for (pair<int, int> pipe : pipes[start_pipe]) {
       if (start.first + pipe.first < rows.size() &&
@@ -229,10 +212,26 @@ void solution() {
             graph_copy[potential_candidate].insert({start.first, start.second});
           }
         }
+      }
+    }
+    for (pair<int, int> pipe : pipes[start_pipe]) {
+      if (start.first + pipe.first < rows.size() &&
+          start.second + pipe.second < rows[0].length()) {
+
+        auto local_graph_copy = graph_copy;
         queue<tuple<int, int, int>> q;
-        q.push({start.first + pipe.first, start.second + pipe.second, 0LL});
         unordered_set<pair<int, int>, hash_pair> visited;
-        visited.insert(start);
+
+        pair<int, int> potential_candidate = {start.first + pipe.first,
+                                              start.second + pipe.second};
+        q.push({potential_candidate.first, potential_candidate.second, 0LL});
+        visited.insert(potential_candidate);
+        // cout << potential_candidate.first << ";" <<
+        // potential_candidate.second
+        //      << "\n";
+
+        // Remove the start from neighbours
+        local_graph_copy[potential_candidate].erase(start);
 
         while (!q.empty()) {
           tuple<int, int, ll> current_node = q.front();
@@ -241,10 +240,9 @@ void solution() {
 
           pair<int, int> current = {get<0>(current_node), get<1>(current_node)};
 
-          for (pair<int, int> neighbour : graph_copy[current]) {
+          for (pair<int, int> neighbour : local_graph_copy[current]) {
             if (neighbour == start) {
-              cout << "woo"
-                   << "\n";
+              cout << current.first << " - " << current.second << "\n";
               found = true;
             }
             if (visited.find(neighbour) == visited.end()) {
@@ -256,8 +254,15 @@ void solution() {
         if (found) {
           loop_pipe = start_pipe;
           cout << loop_pipe << "\n";
+          break;
         }
       }
+      if (found) {
+        break;
+      }
+    }
+    if (found) {
+      break;
     }
   }
 
@@ -267,8 +272,10 @@ void solution() {
   for (pair<int, int> pipe : pipes[loop_pipe]) {
     if (start.first + pipe.first < rows.size() &&
         start.second + pipe.second < rows[0].length()) {
-      graph_copy[{start.first, start.second}].insert(
-          {start.first + pipe.first, start.second + pipe.second});
+      pair<int, int> potential_candidate = {start.first + pipe.first,
+                                            start.second + pipe.second};
+      graph_copy[start].insert(potential_candidate);
+      graph_copy[potential_candidate].insert(start);
     }
   }
   q.push({start.first, start.second, 0LL});
@@ -288,9 +295,6 @@ void solution() {
     //      << "\n";
 
     for (pair<int, int> neighbour : graph_copy[current]) {
-      if (neighbour == start) {
-        found = true;
-      }
       if (visited.find(neighbour) == visited.end()) {
         visited.insert(neighbour);
         q.push({neighbour.first, neighbour.second, distance + 1LL});

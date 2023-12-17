@@ -125,7 +125,7 @@ ll get_next(vector<ll> arr, ll prev) {
     }
   }
   if (i < new_arr.size()) {
-    result -= get_next(new_arr, new_arr[0]);
+    result += get_next(new_arr, new_arr[new_arr.size() - 1]);
   }
   return result;
 }
@@ -136,7 +136,7 @@ void solution() {
 
   vector<string> rows;
 
-  ifstream input("input.txt");
+  ifstream input("example_input.txt");
 
   if (input.is_open()) {
     while (getline(input, row)) {
@@ -145,29 +145,164 @@ void solution() {
     input.close();
   }
 
-  // Essentially build a graph with left and right.
-  // Easiest is to have a map to a pair.
+  map<char, vector<pair<int, int>>> pipes = {
+      {'|', {{1, 0}, {-1, 0}}}, {'-', {{0, 1}, {0, -1}}},
+      {'L', {{-1, 0}, {0, 1}}}, {'J', {{-1, 0}, {0, -1}}},
+      {'7', {{1, 0}, {0, -1}}}, {'F', {{1, 0}, {0, 1}}},
+  };
 
-  int row_number = 0;
+  // If we see a | then connect the grid.
+  // So lets do a map from coordinate to connections
+  unordered_map<pair<int, int>, set<pair<int, int>>, hash_pair> graph;
+
+  // Stores the potential paths
+  map<pair<int, int>, vector<pair<int, int>>> candidates;
+  pair<int, int> start;
 
   for (int i = 0; i < rows.size(); i++) {
-    string num = "";
-
     string row = rows[i];
-    vector<ll> num_row;
+    for (int j = 0; j < row.length(); j++) {
+      if (row[j] == 'S') {
+        start = {i, j};
+      }
+      // cout << "On: " << i << " " << j << "\n";
+      for (pair<int, int> pipe : pipes[row[j]]) {
+        if (i + pipe.first < rows.size() &&
+            j + pipe.second < rows[i].length()) {
+          pair<int, int> potential_candidate = {i + pipe.first,
+                                                j + pipe.second};
+          candidates[potential_candidate].push_back({i, j});
 
-    for (char c : row) {
-      if (c != ' ') {
-        num += c;
-      } else {
-        num_row.push_back(stoll(num));
-        num = "";
+          for (pair<int, int> candidate : candidates[{i, j}]) {
+            // cout << candidate.first << ": " << candidate.second << "\n";
+            // cout << "Potential candidate: " << potential_candidate.first << "
+            // "
+            //      << potential_candidate.second << "\n";
+            if (candidate == potential_candidate) {
+              // cout << "wooh";
+              graph[{i, j}].insert(potential_candidate);
+              graph[potential_candidate].insert({i, j});
+            }
+          }
+        }
       }
     }
-    num_row.push_back(stoll(num));
+  }
 
-    ll diff = num_row[0];
-    ans += get_next(num_row, diff);
+  // Example 1 should return 1.
+  // Find enclosed tiles.
+
+  bool found = false;
+  char loop_pipe = '.';
+  for (char start_pipe : "F|-LJ7") {
+    // Add both pipes, then traverse only in one direction.
+    auto graph_copy = graph;
+    for (pair<int, int> pipe : pipes[start_pipe]) {
+      if (start.first + pipe.first < rows.size() &&
+          start.second + pipe.second < rows[0].length()) {
+        pair<int, int> potential_candidate = {start.first + pipe.first,
+                                              start.second + pipe.second};
+        for (pair<int, int> candidate :
+             candidates[{start.first, start.second}]) {
+          // cout << candidate.first << ": " << candidate.second << "\n";
+          // cout << "Potential candidate: " << potential_candidate.first << "
+          // "
+          //      << potential_candidate.second << "\n";
+          if (candidate == potential_candidate) {
+            // cout << "wooh";
+            graph_copy[{start.first, start.second}].insert(potential_candidate);
+            // Might need to add all pipes, then search
+            graph_copy[potential_candidate].insert({start.first, start.second});
+          }
+        }
+      }
+    }
+    for (pair<int, int> pipe : pipes[start_pipe]) {
+      if (start.first + pipe.first < rows.size() &&
+          start.second + pipe.second < rows[0].length()) {
+
+        auto local_graph_copy = graph_copy;
+        queue<tuple<int, int, int>> q;
+        unordered_set<pair<int, int>, hash_pair> visited;
+
+        pair<int, int> potential_candidate = {start.first + pipe.first,
+                                              start.second + pipe.second};
+        q.push({potential_candidate.first, potential_candidate.second, 0LL});
+        visited.insert(potential_candidate);
+        // cout << potential_candidate.first << ";" <<
+        // potential_candidate.second
+        //      << "\n";
+
+        // Remove the start from neighbours
+        local_graph_copy[potential_candidate].erase(start);
+
+        while (!q.empty()) {
+          tuple<int, int, ll> current_node = q.front();
+          q.pop();
+          ll distance = get<2>(current_node);
+
+          pair<int, int> current = {get<0>(current_node), get<1>(current_node)};
+
+          for (pair<int, int> neighbour : local_graph_copy[current]) {
+            if (neighbour == start) {
+              cout << current.first << " - " << current.second << "\n";
+              found = true;
+            }
+            if (visited.find(neighbour) == visited.end()) {
+              visited.insert(neighbour);
+              q.push({neighbour.first, neighbour.second, distance + 1LL});
+            }
+          }
+        }
+        if (found) {
+          loop_pipe = start_pipe;
+          cout << loop_pipe << "\n";
+          break;
+        }
+      }
+      if (found) {
+        break;
+      }
+    }
+    if (found) {
+      break;
+    }
+  }
+
+  queue<tuple<int, int, int>> q;
+  auto graph_copy = graph;
+
+  for (pair<int, int> pipe : pipes[loop_pipe]) {
+    if (start.first + pipe.first < rows.size() &&
+        start.second + pipe.second < rows[0].length()) {
+      pair<int, int> potential_candidate = {start.first + pipe.first,
+                                            start.second + pipe.second};
+      graph_copy[start].insert(potential_candidate);
+      graph_copy[potential_candidate].insert(start);
+    }
+  }
+  q.push({start.first, start.second, 0LL});
+  unordered_set<pair<int, int>, hash_pair> visited;
+  visited.insert(start);
+
+  while (!q.empty()) {
+    tuple<int, int, ll> current_node = q.front();
+    q.pop();
+    ll distance = get<2>(current_node);
+
+    ans = max(ans, distance);
+
+    pair<int, int> current = {get<0>(current_node), get<1>(current_node)};
+    // cout << "{" << current.first << ", " << current.second << "}: " <<
+    // distance
+    //      << "\n";
+
+    for (pair<int, int> neighbour : graph_copy[current]) {
+      if (visited.find(neighbour) == visited.end()) {
+        visited.insert(neighbour);
+        q.push({neighbour.first, neighbour.second, distance + 1LL});
+      }
+    }
   }
 
   printf("%lld\n", ans);
