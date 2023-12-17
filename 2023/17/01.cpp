@@ -143,7 +143,7 @@ void solution() {
 
   vector<string> rows;
 
-  ifstream input("example_input.txt");
+  ifstream input("input.txt");
 
   if (input.is_open()) {
     while (getline(input, row)) {
