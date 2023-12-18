@@ -177,7 +177,7 @@ void solution() {
       q;
 
   for (ll direction : directions) {
-    // 3 moves left in the direction, 0 heat loss
+    // What if we did this with one per process
     q.push({0LL, 0, 0, direction, 10});
   }
 

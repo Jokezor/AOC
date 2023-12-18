@@ -191,6 +191,16 @@ void solution() {
 
   // Example 1 should return 1.
   // Find enclosed tiles.
+  // Scan from [0,0] to [n-1, m-1]
+  // Check if the position is visited.
+  // If not, then check that all 8 corners
+  // Are either visited or if to the left:
+  // The left one needs its NW, W, SW protected.
+  // So for each node that we find, store that they
+  // Check out. Then essentially queue up their neighbours for checking.
+  // So I would queue up all nodes inside.
+  // So from [0, 0] to [n-1, m-1] queue up all non visited neighbours
+  //
 
   bool found = false;
   char loop_pipe = '.';
