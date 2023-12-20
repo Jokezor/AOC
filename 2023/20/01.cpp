@@ -1,6 +1,7 @@
 #include <bits/stdc++.h>
 #include <fstream>
 #include <queue>
+#include <regex>
 #include <string>
 
 #define ll long long
@@ -234,13 +235,17 @@ bool inside(vector<Point> poly, int n, Point p) {
   return count & 1;
 }
 
+struct Part {
+  int x, m, a, s;
+};
+
 void solution() {
   string row;
   ll ans = 0;
 
   vector<string> rows;
 
-  ifstream input("example_input.txt");
+  ifstream input("input.txt");
 
   if (input.is_open()) {
     while (getline(input, row)) {
@@ -249,127 +254,114 @@ void solution() {
     input.close();
   }
 
-  // Get size of grid.
-  // Then count for each row the distance between start and end.
-  // Dynamic row and column lengths.
-  // But otherwise should be correct.
-  // So for each, increment the curr pair and insert into
-  // When counting, binary search
+  // Sounds like finite state machine
+  // Push these elements into a vector if complete.
+  // Then we can simply go through and sum them.
 
-  Point curr = {0, 0};
-  int min_x = 0;
-  int max_x = 0;
-  int min_y = 0;
-  int max_y = 0;
-  vector<Point> points;
-  points.push_back(Point(curr));
+  bool is_part = false;
+  vector<map<char, int>> parts;
+
+  regex pattern(
+      "([a-zA-Z]+)\\{(([x,m,a,s][<>][0-9]+:[a-zA-Z]+,?)+[a-zA-Z]+)\\}");
+
+  map<string, string> rules;
 
   for (string row : rows) {
-    std::istringstream iss(row);
+    smatch match;
 
-    char direction;
-    int number;
-    string color;
-
-    iss >> direction >> number >> color;
-
-    if (direction == 'R') {
-      curr.x += number;
-    } else if (direction == 'L') {
-      curr.x -= number;
-    } else if (direction == 'U') {
-      curr.y += number;
-    } else if (direction == 'D') {
-      curr.y -= number;
+    if (row == "") {
+      continue;
     }
 
-    min_x = min(min_x, curr.x);
-    max_x = max(max_x, curr.x);
-    max_y = max(max_y, curr.y);
-    min_y = min(min_y, curr.y);
-    points.push_back(Point(curr));
+    if (regex_match(row, match, pattern)) {
+      rules[match[1]] = match[2];
+    } else {
+
+      int x_pos = row.find("x=");
+      int m_pos = row.find("m=");
+      int a_pos = row.find("a=");
+      int s_pos = row.find("s=");
+
+      int x = stoi(row.substr(x_pos + 2, m_pos - x_pos - 1));
+      int m = stoi(row.substr(m_pos + 2, a_pos - m_pos - 1));
+      int a = stoi(row.substr(a_pos + 2, s_pos - a_pos - 1));
+      int s = stoi(row.substr(s_pos + 2, s_pos - row.length()));
+
+      parts.push_back({{'x', x}, {'m', m}, {'a', a}, {'s', s}});
+    }
   }
 
-  // Adjust all points so that x and y is positive.
-  // Add min_x and min_y to all points.
-  //
-  // for (int i = 0; i < points.size(); i++) {
-  //   points[i].x += abs(min_x);
-  //   points[i].y += abs(min_y);
-  // }
+  // cout << rules["qqz"].substr(rules["qqz"].rfind(',') + 1,
+  //                             rules["qqz"].length() -
+  //                             rules["qqz"].rfind(','));
+  vector<int> good_parts;
 
-  set<pair<int, int>> visited;
+  for (int i = 0; i < parts.size(); i++) {
+    map<char, int> part = parts[i];
 
-  // Create board of size [min_x, max_x], [min_y, max_y]
-  map<int, string> board;
-  string board_row = "";
+    string current = "in";
 
-  cout << min_x << ";" << max_x << "\n";
-  for (int j = min_x; j <= max_x; j++) {
-    board_row += '.';
-  }
+    while (true) {
+      string start_workflow = current;
+      string rule = rules[current];
 
-  for (int i = min_y; i <= max_y; i++) {
-    board[i] = board_row;
-  }
+      int start = 0;
+      string fallback_rule =
+          rule.substr(rule.rfind(',') + 1, rule.length() - rule.rfind(','));
+      rule = rule.substr(0, rule.rfind(','));
 
-  board[0][0] = '#';
+      while (start < rule.length()) {
+        string sub_rule = rule.substr(start, rule.length() - start);
 
-  // Print out all points I have to see.
-  for (int i = 0; i < points.size(); i++) {
-    Point p1 = points[i];
-    Point p2 = points[(i + 1) % points.size()];
+        char rating = sub_rule[0];
+        char comparitor = sub_rule[1];
+        int check = stoi(sub_rule.substr(2, sub_rule.find(':') - 2));
+        string next_rule =
+            sub_rule.substr(sub_rule.find(':') + 1,
+                            sub_rule.find(',') - sub_rule.find(':') - 1);
 
-    int x_range = p2.x - p1.x;
-    int y_range = p2.y - p1.y;
+        start += (sub_rule.find(':') + 1) + next_rule.length() + 1;
 
-    ans += x_range;
-    ans += y_range;
+        // cout << check << " "
+        //      << " " << sub_rule << " " << next_rule << "\n";
 
-    for (int x = 0; x <= abs(x_range); x++) {
-      if (x_range > 0) {
-        board[p2.y][max(0, p1.x + x)] = '#';
-      } else {
-        board[p2.y][max(0, p1.x - x)] = '#';
+        if (comparitor == '>') {
+          if (part[rating] > check) {
+            current = next_rule;
+            break;
+          }
+        } else {
+          if (part[rating] < check) {
+            current = next_rule;
+            break;
+          }
+        }
+      }
+
+      if (fallback_rule == "") {
+        cout << fallback_rule << "\n";
+        cout << rule << "\n";
+        cout << start_workflow << "\n";
+        return;
+      }
+      // cout << current << "\n";
+      if (current == start_workflow) {
+        current = fallback_rule;
+      }
+
+      if (current == "A") {
+        int part_ans = part['x'] + part['m'] + part['a'] + part['s'];
+        cout << part_ans << "\n";
+        ans += part_ans;
+        good_parts.push_back(i);
+        break;
+      } else if (current == "R") {
+        break;
       }
     }
-    for (int y = 0; y <= abs(y_range); y++) {
-      cout << max(0, abs(p1.x) - 1) << "; " << p1.y + y << "\n";
-      if (y_range > 0) {
-        board[p1.y + y][abs(p1.x)] = '#';
-      } else {
-        board[p1.y - y][abs(p1.x)] = '#';
-      }
-    }
-
-    // for (int y = 0; y < y_range; y++) {
-    //   cout << ".";
-    // }
   }
 
-  for (int y = max_y; y >= min_y; y--) {
-    cout << board[y] << "\n";
-  }
-  // for (pair<int, string> r : board) {
-  //   cout << r.second << "\n";
-  // }
-
-  // for (int i = 5; i < 6; i++) {
-  //   for (int j = 0; j < 7; j++) {
-  //     pair<int, int> p = {j, -i};
-  //     if (inside(points, points.size(), Point({j, -i}))) {
-  //       cout << "so you are inside..\n";
-  //       if (visited.find(p) == visited.end()) {
-  //         cout << "#";
-  //         visited.insert(p);
-  //         ans++;
-  //       }
-  //     } else {
-  //       cout << ".";
-  //     }
-  //   }
-  //   cout << "\n";
-  // }
+  cout << good_parts.size() << "\n";
 
   printf("%lld\n", ans);
 }
