@@ -245,7 +245,7 @@ void solution() {
 
   vector<string> rows;
 
-  ifstream input("input.txt");
+  ifstream input("example_input.txt");
 
   if (input.is_open()) {
     while (getline(input, row)) {
@@ -254,114 +254,54 @@ void solution() {
     input.close();
   }
 
-  // Sounds like finite state machine
-  // Push these elements into a vector if complete.
-  // Then we can simply go through and sum them.
-
-  bool is_part = false;
-  vector<map<char, int>> parts;
-
-  regex pattern(
-      "([a-zA-Z]+)\\{(([x,m,a,s][<>][0-9]+:[a-zA-Z]+,?)+[a-zA-Z]+)\\}");
-
-  map<string, string> rules;
+  // How do I want to store?
+  map<string, vector<pair<string, int>>> modules;
 
   for (string row : rows) {
-    smatch match;
+    auto divider = row.find(" -> ");
+    string module_string = row.substr(0, divider);
 
-    if (row == "") {
-      continue;
+    vector<pair<string, int>> destinations;
+
+    string destination_string =
+        row.substr(divider + 4, row.length() - divider + 4);
+
+    string destination = "";
+    for (int i = 0; i < destination_string.length(); i++) {
+      if (destination_string[i] != ' ' && destination_string[i] != ',') {
+        destination += destination_string[i];
+      } else if (destination != "") {
+        destinations.push_back({destination, 0});
+        destination = "";
+      }
     }
-
-    if (regex_match(row, match, pattern)) {
-      rules[match[1]] = match[2];
-    } else {
-
-      int x_pos = row.find("x=");
-      int m_pos = row.find("m=");
-      int a_pos = row.find("a=");
-      int s_pos = row.find("s=");
-
-      int x = stoi(row.substr(x_pos + 2, m_pos - x_pos - 1));
-      int m = stoi(row.substr(m_pos + 2, a_pos - m_pos - 1));
-      int a = stoi(row.substr(a_pos + 2, s_pos - a_pos - 1));
-      int s = stoi(row.substr(s_pos + 2, s_pos - row.length()));
-
-      parts.push_back({{'x', x}, {'m', m}, {'a', a}, {'s', s}});
-    }
+    destinations.push_back({destination, 0});
+    modules[module_string] = destinations;
   }
 
-  // cout << rules["qqz"].substr(rules["qqz"].rfind(',') + 1,
-  //                             rules["qqz"].length() -
-  //                             rules["qqz"].rfind(','));
-  vector<int> good_parts;
+  // In my current solution, I'm doing the processing outside of the
+  // datastructure. But we could maintain an output signal? But it will be more
+  // error prone I feel even if it would be more like building the actual
+  // circuit.
 
-  for (int i = 0; i < parts.size(); i++) {
-    map<char, int> part = parts[i];
+  // 0: no pulse
+  // 1: low pulse
+  // 2: high pulse
+  //
+  // Might make 0 low pulse and remove no pulse later.
 
-    string current = "in";
+  // module_string[0] determines the type.
 
-    while (true) {
-      string start_workflow = current;
-      string rule = rules[current];
+  // First simply make it possible to signal through.
+  // For example, how to handle conjunctions remembering inputs?
+  // We also need to maintain initial states etc for each input.
+  //
+  // Simply;
+  //
+  // broadcaster: {{a, 0}, {b, 0}, {c, 0}}
+  // So its string: vector<pair<string, int>>
 
-      int start = 0;
-      string fallback_rule =
-          rule.substr(rule.rfind(',') + 1, rule.length() - rule.rfind(','));
-      rule = rule.substr(0, rule.rfind(','));
-
-      while (start < rule.length()) {
-        string sub_rule = rule.substr(start, rule.length() - start);
-
-        char rating = sub_rule[0];
-        char comparitor = sub_rule[1];
-        int check = stoi(sub_rule.substr(2, sub_rule.find(':') - 2));
-        string next_rule =
-            sub_rule.substr(sub_rule.find(':') + 1,
-                            sub_rule.find(',') - sub_rule.find(':') - 1);
-
-        start += (sub_rule.find(':') + 1) + next_rule.length() + 1;
-
-        // cout << check << " "
-        //      << " " << sub_rule << " " << next_rule << "\n";
-
-        if (comparitor == '>') {
-          if (part[rating] > check) {
-            current = next_rule;
-            break;
-          }
-        } else {
-          if (part[rating] < check) {
-            current = next_rule;
-            break;
-          }
-        }
-      }
-
-      if (fallback_rule == "") {
-        cout << fallback_rule << "\n";
-        cout << rule << "\n";
-        cout << start_workflow << "\n";
-        return;
-      }
-      // cout << current << "\n";
-      if (current == start_workflow) {
-        current = fallback_rule;
-      }
-
-      if (current == "A") {
-        int part_ans = part['x'] + part['m'] + part['a'] + part['s'];
-        cout << part_ans << "\n";
-        ans += part_ans;
-        good_parts.push_back(i);
-        break;
-      } else if (current == "R") {
-        break;
-      }
-    }
-  }
-
-  cout << good_parts.size() << "\n";
+  // But now we only look at sending signals.
 
   printf("%lld\n", ans);
 }
