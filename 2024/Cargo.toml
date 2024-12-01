@@ -1,0 +1,56 @@
+[package]
+name = "day_1"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "day_1"
+path = "src/day_1.rs"
+
+[[bin]]
+name = "day_2"
+path = "src/day_2.rs"
+
+
+[[bin]]
+name = "day_2_hashmap"
+path = "src/day_2_hashmap.rs"
+
+
+[[bin]]
+name = "day_3"
+path = "src/day_3.rs"
+
+[[bin]]
+name = "day_3_refactor"
+path = "src/day_3_refactor.rs"
+
+[[bin]]
+name = "day_4"
+path = "src/day_4.rs"
+
+[[bin]]
+name = "day_5"
+path = "src/day_5.rs"
+
+[[bin]]
+name = "day_5_refactor"
+path = "src/day_5_refactor.rs"
+
+[[bin]]
+name = "day_6"
+path = "src/day_6.rs"
+
+[[bin]]
+name = "day_6_refactor"
+path = "src/day_6_refactor.rs"
+
+[[bin]]
+name = "day_7"
+path = "src/day_7.rs"
+
+
+
+[dependencies]
+md5 = "0.7.0"
+rayon = "1.10.0"
