@@ -62,10 +62,6 @@ fn part_2(s : &str) -> i32 {
         }
     }
 
-    // Now sort and compare each one by one.
-    left.sort();
-    right.sort();
-
     let mut counter = HashMap::<i32, i32>::new();
 
     for num in &right {
@@ -75,8 +71,7 @@ fn part_2(s : &str) -> i32 {
     let mut ans : i32 = 0;
     // Check occurance score for each entry
     for num in &left {
-        let num_count = counter.get(num);
-        ans += match num_count {
+        ans += match counter.get(num) {
             Some(count) => count * num,
             None => 0
         };
