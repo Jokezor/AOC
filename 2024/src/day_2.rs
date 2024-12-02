@@ -2,6 +2,7 @@ use std::fs;
 use std::cmp::max;
 use std::collections::{HashSet, HashMap};
 
+
 fn part_1(s : &str) -> i32 {
     let mut rows = Vec::<Vec<i32>>::new();
     for row in s.split("\n") {
@@ -33,32 +34,10 @@ fn part_1(s : &str) -> i32 {
         // Check if decreasing
         // Record max diff of elements.
         // If either both increasing and decreasing or max_diff > 4, then return 0.
-
-        let mut increasing = false;
-        let mut decreasing = false;
-        let mut max_diff = 0;
-
-        for i in 0..row.len()-1 {
-            let diff : i32 = row[i+1 as usize] - row[i as usize];
-            if diff > 0 {
-                increasing = true;
-            }
-            else if diff < 0 {
-                decreasing = true;
-            }
-            else {
-                decreasing = true;
-                increasing = true;
-            }
-            max_diff = max(max_diff, diff.abs());
+        if is_good_report(row) {
+            ans += 1;
         }
-        if (increasing && decreasing) || max_diff > 3 {
-            continue;
-        }
-        ans += 1;
     }
-
-
     ans
 }
 
@@ -144,8 +123,6 @@ fn part_2(s : &str) -> i32 {
             }
         }
     }
-
-
     ans
 }
 
