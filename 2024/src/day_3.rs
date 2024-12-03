@@ -6,81 +6,44 @@ use regex::Regex;
 
 fn part_1(s : &str) -> i32 {
     let re = Regex::new(r"mul\((\d+),(\d+)\)").unwrap();
-
-    let mut ans : i32 = 0;
-    let ans = re.captures_iter(s).map(|cap| {
-        let x = cap.get(1).unwrap().as_str();
-        let y = cap.get(2).unwrap().as_str();
-
-        let x_num = x.parse::<i32>().unwrap();
-        let y_num = y.parse::<i32>().unwrap();
-        x_num * y_num
-    }).sum();
-
-    ans
+    re.captures_iter(s)
+        .map(|cap| cap[1].parse::<i32>().unwrap() * cap[2].parse::<i32>().unwrap())
+        .sum()
 }
 
 
 fn part_2(s : &str) -> i32 {
     let re = Regex::new(r"mul\((\d+),(\d+)\)").unwrap();
-    let re_dos = Regex::new(r"do\(\)").unwrap();
-    let re_donts = Regex::new(r"don't\(\)").unwrap();
+    let re_do = Regex::new(r"do\(\)").unwrap();
+    let re_dont = Regex::new(r"don't\(\)").unwrap();
 
-    let dos : Vec<(usize, usize)> = re_dos.captures_iter(s).map(|cap| {
-        let whole_match = cap.get(0).unwrap();
-        let match_start = whole_match.start();
-        let match_end = whole_match.end();
-        (match_start, match_end)
-    }).collect();
+    let dos = re_do.find_iter(s).map(|m| m.start()).collect::<Vec<_>>();
+    let donts = re_dont.find_iter(s).map(|m| m.start()).collect::<Vec<_>>();
 
-    let donts : Vec<(usize, usize)> = re_donts.captures_iter(s).map(|cap| {
-        let whole_match = cap.get(0).unwrap();
-        let match_start = whole_match.start();
-        let match_end = whole_match.end();
-        (match_start, match_end)
-    }).collect();
-
-    let mut ans : i32 = 0;
-    let ans = re.captures_iter(s).map(|cap| {
-        let whole_match = cap.get(0).unwrap();
-
-        let match_start = whole_match.start();
-        let match_end = whole_match.end();
-
-        // println!("start: {}, end: {}", match_start, match_end);
+    re.captures_iter(s).map(|cap| {
+        let match_start = cap.get(0).unwrap().start();
 
         // Find do and donts before match_start.
-        let mut do_before = 0;
-        for do_ind in &dos {
-            if do_ind.0 > match_start {
-                break;
-            }
-            do_before = do_ind.0;
-        }
+        let last_do = dos.iter()
+            .rev()
+            .find(|&&pos| pos <= match_start)
+            .cloned()
+            .unwrap_or(0);
 
-        let mut dont_before = 0;
-        for dont_ind in &donts {
-            if dont_ind.0 > match_start {
-                break;
-            }
-            dont_before = dont_ind.0;
-        }
+        let last_dont = donts.iter()
+            .rev()
+            .find(|&&pos| pos <= match_start)
+            .cloned()
+            .unwrap_or(0);
 
         //println!("do: {}, dont: {}", do_before, dont_before);
-        if dont_before > do_before {
+        if last_dont > last_do {
             0
         }
         else {
-            let x = cap.get(1).unwrap().as_str();
-            let y = cap.get(2).unwrap().as_str();
-
-            let x_num = x.parse::<i32>().unwrap();
-            let y_num = y.parse::<i32>().unwrap();
-            x_num * y_num
+            cap[1].parse::<i32>().unwrap() * cap[2].parse::<i32>().unwrap()
         }
-    }).sum();
-
-    ans
+    }).sum()
 }
 
 
