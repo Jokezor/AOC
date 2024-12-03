@@ -50,7 +50,7 @@ name = "day_7"
 path = "src/day_7.rs"
 
 
-
 [dependencies]
 md5 = "0.7.0"
 rayon = "1.10.0"
+regex = "1.11.1"
