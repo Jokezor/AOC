@@ -42,7 +42,7 @@ fn part_1(s : &str) -> i32 {
             }
             // Left
             {
-                if j > 3 {
+                if j > 2 {
                     let candidate = &words[i][j-3..j+1];
                     if candidate.len() == 4 && is_xmas(candidate) {
                         ans += 1;
@@ -60,8 +60,8 @@ fn part_1(s : &str) -> i32 {
             }
             // up
             {
-                if i > 3 {
-                    let candidate : Vec<char> = words[i-3..i+1].iter().map(|row| row[j]).collect();
+                if i > 2 {
+                    let candidate : Vec<char> = words[i-3..i+1].iter().rev().map(|row| row[j]).collect();
                     if candidate.len() == 4 && is_xmas(&candidate) {
                         ans += 1;
                     }
@@ -69,7 +69,7 @@ fn part_1(s : &str) -> i32 {
             }
             // Right up diagonally.
             {
-                if i > 2 && j < n -3 {
+                if i > 2 && j < n - 3 {
                     let sliced_words : Vec<&Vec<char>> = words[i-3..i+1].iter().rev().collect();
                     let mut candidate : Vec<char> = Vec::new();
 
@@ -92,31 +92,32 @@ fn part_1(s : &str) -> i32 {
                     let mut candidate : Vec<char> = Vec::new();
 
                     let mut word_ind = 0;
-                    for k in j-3..j+1 {
+                    for k in (j-3..j+1).rev() {
                         candidate.push(sliced_words[word_ind as usize][k as usize]);
                         word_ind += 1;
                     }
 
                     if candidate.len() == 4 && is_xmas(&candidate) {
-                        println!("left up diagonally, {:?}, {i}, {j}", candidate);
                         ans += 1;
+                        println!("WOT");
                     }
                 }
             }
 
             // Left down diagonally
             {
-                if i < m-3 && j > 3 {
+                if i < m-3 && j > 2 {
                     let sliced_words : Vec<&Vec<char>> = words[i..i+4].iter().collect();
                     let mut candidate : Vec<char> = Vec::new();
 
                     let mut word_ind = 0;
-                    for k in j..j-4 {
+                    for k in (j-3..j+1).rev() {
                         candidate.push(sliced_words[word_ind as usize][k as usize]);
                         word_ind += 1;
                     }
 
                     if candidate.len() == 4 && is_xmas(&candidate) {
+                        //println!("WOT");
                         ans += 1;
                     }
                 }
@@ -134,13 +135,14 @@ fn part_1(s : &str) -> i32 {
                         word_ind += 1;
                     }
 
-                    if candidate.len() == 4 && is_xmas(&candidate) {
-                        ans += 1;
-                        println!("Right down diagonally, {:?}, {i}, {j}", candidate);
+                    if candidate.len() == 4 {
+                        if is_xmas(&candidate) {
+                            //println!("WOT");
+                            ans += 1;
+                        }
                     }
                 }
             }
-
         }
     }
     ans
@@ -155,10 +157,9 @@ fn main() {
 
     println!("ex1: {}", ex_1);
 
-    // 5 horizontal + 1 down + 2 up
-    assert!(ex_1 == 8);
-
-
+    // 5 horizontal + 1 down + 2 up + 4 right up diagonal + 4 left up diagonal + 1 left down
+    //   diagonal + 1 right down diagonal
+    assert!(ex_1 == 18);
 
     //let ex_2 = part_2(&example_contents);
 
@@ -171,9 +172,9 @@ fn main() {
     let contents = fs::read_to_string("src/input.txt")
         .expect("Should have read file.");
 
-    //let ans_1 = part_1(&contents);
+    let ans_1 = part_1(&contents);
 
-    //println!("ans1: {}", ans_1);
+    println!("ans1: {}", ans_1);
 
     //assert!(ans_1 == 189527826);
 
