@@ -87,7 +87,7 @@ fn part_1(s : &str) -> i32 {
 
             // Left up diagonally.
             {
-                if i > 2 && j > 3 {
+                if i > 2 && j > 2 {
                     let sliced_words : Vec<&Vec<char>> = words[i-3..i+1].iter().rev().collect();
                     let mut candidate : Vec<char> = Vec::new();
 
@@ -99,7 +99,7 @@ fn part_1(s : &str) -> i32 {
 
                     if candidate.len() == 4 && is_xmas(&candidate) {
                         ans += 1;
-                        println!("WOT");
+                        //println!("WOT");
                     }
                 }
             }
@@ -150,7 +150,7 @@ fn part_1(s : &str) -> i32 {
 
 
 fn main() {
-    let example_contents = fs::read_to_string("src/example_input.txt")
+    let example_contents = fs::read_to_string("src/example_input_4.txt")
         .expect("Should have read file.");
 
     let ex_1 = part_1(&example_contents);
@@ -169,7 +169,7 @@ fn main() {
 
     /////////////////////////
 
-    let contents = fs::read_to_string("src/input.txt")
+    let contents = fs::read_to_string("src/input_4.txt")
         .expect("Should have read file.");
 
     let ans_1 = part_1(&contents);
