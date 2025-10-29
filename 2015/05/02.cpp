@@ -269,42 +269,76 @@ struct xCmp {
   }
 };
 
+bool contains_pair(string s) {
+    // It contains a pair of any two letters that appears at least twice in the string without overlapping, like xyxy (xy) or aabcdefgaa (aa), but not like aaa (aa, but it overlaps).
+    // No overlap does not mean aa is disqualified.
+    // How to check this easily without generating all pairs of letters?
+    // We know that there is a maximum of 26 letters. So, we could simply check for 'aa', where we jump i+=2 between each check. Terminating early if we got a match.
+    // But this would be 26*N if we only considered the duplicate like this.
+    // Instead if we were to construct each pair, it would be 26^2 options. Which is also fine.
+    bool passed_check = false;
+
+    // 1. Construct the pairs to check for
+    // a-z
+    for (int i=0; i < 26; ++i) {
+        for (int j=0; j < 26; ++j) {
+            vector<char> pair_to_check(2);
+            pair_to_check[0] = i + 'a';
+            pair_to_check[1] = j + 'a';
+
+            int pair_count = 0;
+
+            // Now iterate through string s, 2 at a time
+            for (int k = 0; k < s.length() - 1; ++k) {
+                if (s[k] == pair_to_check[0] && s[k+1] == pair_to_check[1]) {
+                    // We need to jump ahead k by 1 to not overlap
+                    ++k;
+                    ++pair_count;
+                }
+            }
+
+            if (pair_count >= 2) {
+                passed_check = true;
+                break;
+            }
+        }
+        if (passed_check) break;
+    }
+    return passed_check;
+}
+
+bool contains_repeated_letter(string s) {
+    // It contains at least one letter which repeats with exactly one letter between them, like xyx, abcdefeghi (efe), or even aaa.
+
+    // Here we can go through each letter once again.
+    // We should iterate through, then instead of going through the alphabet once more, simply iterate once.
+
+    bool passed_check = false;
+
+    for (int i=0; i < 26; ++i) {
+        char letter_to_repeat = i + 'a';
+
+        for (int k =0; k < s.length() - 2; ++k) {
+            if (s[k] == letter_to_repeat && s[k+2] == letter_to_repeat) {
+                passed_check = true;
+                break;
+            }
+        }
+        if (passed_check) {
+            break;
+        }
+    }
+    return passed_check;
+}
+
 bool isNiceString(string s) {
-  bool repeated_letter = false;
-  bool two_pair = false;
-
-  for (int i =1; i < s.length()-1; ++i) {
-    if (s[i-1] == s[i+1]) {
-      repeated_letter = true;
-      break;
+    // Not possible with less than 3 chars.
+    if (s.length() <= 3) {
+        return false;
     }
-  }
 
-  // Push each index of pairs.
-  unordered_map<string, ll> pairs;
-
-  // Instead push all letters.
-  // Record positions in the string
-
-  for (int i=0; i < s.length()-1; i++) {
-    string candidate = s.substr(i, 2);
-    auto rev_candidate = candidate | std::views::reverse;
-    string reversed_string{begin(rev_candidate), end(rev_candidate)};
-
-    if (pairs.find(candidate) != pairs.end()) {
-      // Need to be non overlapping.
-      if ((i - pairs[candidate]) >= 2) {
-        two_pair = true;
-        break;
-      }
-    }
-    pairs[candidate] = i;
-    pairs[reversed_string] = i;
-  }
-
-  cout << (two_pair && repeated_letter) << "\n";
-
-  return (repeated_letter && two_pair);
+    // Needs to contain a pair present more than once and contains a letter repeated with a letter inbetween
+    return contains_pair(s) && contains_repeated_letter(s);
 }
 
 void solution() {
