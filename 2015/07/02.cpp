@@ -269,75 +269,106 @@ struct xCmp {
   }
 };
 
-bool contains_pair(string s) {
-    // It contains a pair of any two letters that appears at least twice in the string without overlapping, like xyxy (xy) or aabcdefgaa (aa), but not like aaa (aa, but it overlaps).
-    // No overlap does not mean aa is disqualified.
-    // How to check this easily without generating all pairs of letters?
-    // We know that there is a maximum of 26 letters. So, we could simply check for 'aa', where we jump i+=2 between each check. Terminating early if we got a match.
-    // But this would be 26*N if we only considered the duplicate like this.
-    // Instead if we were to construct each pair, it would be 26^2 options. Which is also fine.
-    bool passed_check = false;
 
-    // Now can this be done more optimal?
-    // We could look at going with two pointers.
-    // while left < right.
-    // Keep a check for if s[left] == s[right], then increment.
-    // If we get more than two then valid.
-    // But when to increment which?
-    // For this we would actually need to go through s for each char in s, leading to O(N^2).
-    // Which is worse than the O(N) we have here. Since its 26^2 * N = 676 * N its a low constant as well.
-    // I don't see any obvious improvements to running time.
+bool matrix[1001][1001];
 
-    // 1. Construct the pairs to check for
-    // a-z
 
-    array<int> pairs (26*26, -1);
-    for (int i=0; i < 26; ++i) {
-        for (int j=0; j < 26; ++j) {
-            pair<char, char> pair_to_check = {i + 'a', j + 'a'};
+vector<string> splitByDelimiter(string in, char delimiter) {
+    vector<string> instructions;
 
-            int pair_count = 0;
-
-            // Now iterate through string s, 2 at a time
-            for (int k = 0; k < s.length() - 1; ++k) {
-                if (s[k] == pair_to_check.first && s[k+1] == pair_to_check.second) {
-                    // We need to jump ahead k by 1 to not overlap
-                    ++k;
-                    ++pair_count;
-                }
-            }
-
-            if (pair_count >= 2) {
-                passed_check = true;
-                break;
-            }
+    string s;
+    for (int i=0; i < in.length(); ++i) {
+        if (in[i] != delimiter) {
+            s += in[i];
         }
-        if (passed_check) break;
-    }
-    return passed_check;
-}
-
-bool contains_repeated_letter(string s) {
-    // It contains at least one letter which repeats with exactly one letter between them, like xyx, abcdefeghi (efe), or even aaa.
-
-    // Here we can go through each letter once again.
-    // We should iterate through, then instead of going through the alphabet once more, simply iterate once.
-    for (int k =0; k < s.length() - 2; ++k) {
-        if (s[k] == s[k+2]) {
-            return true;
+        else {
+            instructions.push_back(s);
+            s = "";
         }
     }
-    return false;
+    instructions.push_back(s);
+    return instructions;
 }
 
-bool isNiceString(string s) {
-    // Not possible with less than 3 chars.
-    if (s.length() <= 3) {
-        return false;
+vector<pair<int, int>> extractCorners(vector<string> instructions, int index) {
+    // 12,823 through 102,934
+    // Should ouput -> [{12,823}, {102, 934}]
+    //
+    vector<pair<int, int>> result;
+
+    vector<string> firstPairString = splitByDelimiter(instructions[index], ',');
+    vector<string> secondPairString = splitByDelimiter(instructions[index+2], ',');
+    
+
+    result.push_back({stoi(firstPairString[0]), stoi(firstPairString[1])});
+    result.push_back({stoi(secondPairString[0]), stoi(secondPairString[1])});
+    
+    return result;
+}
+
+void configureLights(string row) {
+    /*
+     * 
+    turn on 12,823 through 102,934
+    toggle 756,965 through 812,992
+    turn off 743,684 through 789,958
+    */
+
+    // Split string on spaces.
+    // If first word is "toggle" then parse numbers.
+    // If first word is "turn", then parse next word and check if 'on' or 'off'
+
+    // 1. How to split string?
+    // We could use regex but a bit more involved. First do without.
+
+    vector<string> instructions = splitByDelimiter(row, ' ');
+
+    // Keep index pointer
+    int index = 1;
+    string type = instructions[0];
+    bool turnOn = true;
+    bool toggle = true;
+
+    if (type == "turn") {
+        string state = instructions[1];
+        if (state == "off") turnOn = false;
+        ++index;
+        toggle = false;
     }
 
-    // Needs to contain a pair present more than once and contains a letter repeated with a letter inbetween
-    return contains_pair(s) && contains_repeated_letter(s);
+    vector<pair<int, int>> corners = extractCorners(instructions, index);
+
+    // Go from small to big
+
+    pair<int, int> firstCorner = corners[0];
+    pair<int, int> secondCorner = corners[1];
+
+    int row_start = min(firstCorner.first, secondCorner.first);
+    int row_end = max(firstCorner.first, secondCorner.first);
+
+    int col_start = min(firstCorner.second, secondCorner.second);
+    int col_end = max(firstCorner.second, secondCorner.second);
+
+    for (int i=row_start; i <= row_end; ++i) {
+        for (int j=col_start; j <= col_end; ++j) {
+            if (toggle) {
+                matrix[i][j] = !matrix[i][j];
+            } else{
+                matrix[i][j] = turnOn;
+            }
+        }
+    }
+
+}
+
+ll countLights() {
+    ll ans = 0;
+    for (int i=0; i < 1000; ++i) {
+        for (int j=0; j < 1000; ++j) {
+            ans += matrix[i][j];
+        }
+    }
+    return ans;
 }
 
 void solution() {
@@ -347,6 +378,8 @@ void solution() {
   vector<string> rows;
 
   ifstream input("input.txt");
+  
+
 
   if (input.is_open()) {
     while (getline(input, row)) {
@@ -357,8 +390,10 @@ void solution() {
 
   for (string row : rows) {
     cout << row << "\n";
-    ans += isNiceString(row);
+    configureLights(row);
   }
+
+  ans = countLights();
 
   printf("%lld\n", ans);
 }
@@ -367,9 +402,27 @@ int main() {
   // ios_base::sync_with_stdio(false);
   // cin.tie(NULL);
   int t = 1;
+  
+  string test1 = "turn on 0,0 through 2,2";
+  // Full flow
+  //configureLights(test1);
+  
+  //assert(countLights() == 9);
+  
+  vector<string> test2 = {"turn", "on", "12,823", "through", "102,934"};
+  vector<pair<int, int>> expected = {{12, 823}, {102, 934}};
+  vector<pair<int, int>> result = extractCorners(test2, 2);
+  
+  
+  assert(expected[0].first == result[0].first);
+  assert(expected[1].first == result[1].first);
+  assert(expected[0].second == result[0].second);
+  assert(expected[1].second == result[1].second);
 
   while (t--)
     solution();
 
   return 0;
 }
+
+
