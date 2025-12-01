@@ -372,27 +372,39 @@ bool check_inter(const pt& a, const pt& b, const pt& c, const pt& d) {
            sgn(c.cross(d, a)) != sgn(c.cross(d, b));
 }
 
-void solution() {
-  // ScopedTimer timer{"solution"};
-  //
-  // Solve it
- 
-  int dial = 50;
+int part_1(vector<string> rows) {
+    int dial = 50;
+    int ans = 0;
 
-  vector<string> rows;
+    for (string row : rows) {
+        char direction = row[0];
+        int amount = stoi(row.substr(1, row.length()-1));
 
+        if (direction == 'L') {
+              dial -= amount;
+        }
+        else {
+            dial += amount;
+        }
 
-  ifstream input("input.txt");
+        if (dial < 0) {
+            dial += 100;
+        }
 
-  if (input.is_open()) {
-    string row;
-    while (getline(input, row)) {
-      rows.push_back(row);
+        dial %= 100;
+
+        if (dial == 0) {
+            ++ans;
+        }
     }
-    input.close();
-  }
 
+    return ans;
+}
+
+int part_2(vector<string> rows) {
+  int dial = 50;
   int ans = 0;
+
 
   for (string row : rows) {
       char direction = row[0];
@@ -405,20 +417,49 @@ void solution() {
           dial += amount;
       }
 
+      // We should not count if already at 0.
+      int diff = (dial + amount > 0 && dial <= 0) + abs(dial/100);
+      ans += diff;
+
       if (dial < 0) {
-          dial += 100;
+          dial = 100-abs(dial%100);
       }
-
       dial %= 100;
-
-      if (dial == 0) {
-          ++ans;
-      }
+      // cout << dial << "\n";
   }
 
-  cout << ans << "\n";
+  return ans;
+}
 
-  // assert(ans == 3);
+vector<string> read_input(string file_name) {
+  vector<string> rows;
+  ifstream input(file_name);
+
+  if (input.is_open()) {
+    string row;
+    while (getline(input, row)) {
+      rows.push_back(row);
+    }
+    input.close();
+  }
+  return rows;
+}
+
+void solution() {
+  // ScopedTimer timer{"solution"};
+  //
+  // Solve it
+
+  vector<string> example_input = read_input("example_input.txt");
+  vector<string> problem_input = read_input("input.txt");
+
+  cout << "ex 1: " << part_1(example_input) << "\n";
+  cout << "ex 2: " << part_2(example_input) << "\n";
+
+  cout << "part_1: " << part_1(problem_input) << "\n";
+  cout << "part_2: " << part_2(problem_input) << "\n";
+
+  // assert(ans == 6);
 }
 
 int main() {
@@ -432,3 +473,4 @@ int main() {
     solution();
   return 0;
 }
+
