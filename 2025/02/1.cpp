@@ -441,11 +441,16 @@ ll part_2(vector<string> rows) {
     // Split the string by columns
     vector<string> id_ranges = split_by(rows[0], ',');
 
+    ll max_seen = 0;
+
     for (string row : id_ranges) {
         vector<string> id_range = split_by(row, '-');
 
         ll left = stoll(id_range[0]);
         ll right = stoll(id_range[1]);
+
+        max_seen = max(max_seen, right);
+
         ll jump = 1;
 
         while (left <= right) {
@@ -470,6 +475,51 @@ ll part_2(vector<string> rows) {
             // subsequence.
             // No good solution.
             // Only O(N^3) bruteforce.
+            //
+            // An alternative solution is to look at the distance between the invalid ids.
+            // For example:
+            //
+            // 2: 11 - 99, has 11 inbetween each invalid id (How many invalid integers in this range? 8: [11, 22, 33, 44, 55, 66, 77, 88, 99] (10-1) = 9 since we skip 0s.
+            // 3: 111 - 999 has 111 between each. (Increment all of the integers) Is it to increment the number of integers?: This one also has 9 invalid.
+            //
+            // When n <= 3, then its 9 in 0-99 and 9 in 100-999
+            //
+            // 4: 1000 - 9999: [1010, 1111, 1212, 1313, 1414, 1515, 1616, 1717, 1818, 1919, 2020, 2121, 2222, 2323, 2424, 2525, 2626, 2727, 2828, 2929, 3030
+            //              [9090 - 9999].
+            //
+            // 10 per thousand?
+            //
+            // primes are not possible to take 1212 etc so:
+            // 5: 10000 - 99999: [11111, 22222, 33333, 44444, 55555, 66666, 77777, 88888, 99999]: 9
+            //
+            // 6: 100000 - 999999: [100100, 101010, 101101, 102102, 103103, 104104, 105105, 106106, 107107, 108108, 109109, 110110, 111111, 112112
+            //
+            // What about 101010? That one is missed in this solution!
+            //
+            // 10 per 1k, 10*100 = 1k
+            // 100 per 10k
+            // Its 10 per 1k, so get an algo to calculate exact how many in exact form.
+            //
+            // 7: 1000000 - 9999999 [1111111, 2222222, ...]: 9
+            //
+            // 8: 10000000 - 99999999 [10001000, 
+            //
+            // 100k?
+            //
+            // First time we can repeat 3 tim
+            // 9: 100000000 - 999999999 [
+            // 
+            //
+            //
+            // 
+            // Lets check max integer we can see from inputs log10 to see how many digits there are.
+            // maximum is 9 digits.
+            //
+            //
+            // If we precompute how many invalid ids are in each such range, we only need to lookup for each query.
+            // Then we could take to put it into compile time since this is static?
+            // Lets start simple for now.
+            //
             //
             if (n & 1 == 0) {
                 if (candidate.substr(0, n/2) == candidate.substr(n/2, n/2)) {
@@ -497,6 +547,7 @@ ll part_2(vector<string> rows) {
             left += jump;
         }
     }
+    cout << max_seen << "\n";
     return ans;
 }
 
