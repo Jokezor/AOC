@@ -436,18 +436,74 @@ ll part_1(vector<string> rows) {
     return ans;
 }
 
-int part_2(vector<string> rows) {
-  int ans = 0;
+ll part_2(vector<string> rows) {
+    ll ans = 0;
+    // Split the string by columns
+    vector<string> id_ranges = split_by(rows[0], ',');
 
+    for (string row : id_ranges) {
+        vector<string> id_range = split_by(row, '-');
 
+        ll left = stoll(id_range[0]);
+        ll right = stoll(id_range[1]);
+        ll jump = 1;
 
-  return ans;
+        while (left <= right) {
+            string candidate = to_string(left);
+            int n = candidate.length();
+
+            // Now we also need to consider odd ranges
+            // But then we need to take care of that.
+            // What needs to be done about the middle element in case of odd?
+            // 111 => must match first
+            //
+            // 123123123 => must match 2nd
+            //
+            // 157157157 => must match 2nd
+            //
+            // 123451234512345 => must match 3rd
+            //
+            // 123123123123123 => must match 2nd.
+            //
+            // So if left == right, remove
+            // So it depends on the cyclic behaviour of the repeated
+            // subsequence.
+            // No good solution.
+            // Only O(N^3) bruteforce.
+            //
+            if (n & 1 == 0) {
+                if (candidate.substr(0, n/2) == candidate.substr(n/2, n/2)) {
+                    ans += stoll(candidate);
+                }
+            }
+            else {
+                // Now on odd, we need to go through each 
+                for (int i=1; i <= n/2; ++i) {
+                    string subsequence = candidate.substr(0, i);
+                    int start = i;
+                    while (start < n) {
+                        if (subsequence != candidate.substr(start, i)) {
+                            break;
+                        }
+                        start += i;
+                    }
+                    // cout << candidate << "\n";
+                    if (start >= n) {
+                        ans += stoll(candidate);
+                        break;
+                    }
+                }
+            }
+            left += jump;
+        }
+    }
+    return ans;
 }
 
 
 
 void solution() {
-  // ScopedTimer timer{"solution"};
+  ScopedTimer timer{"solution"};
   //
   // Solve it
 
@@ -455,10 +511,10 @@ void solution() {
   vector<string> problem_input = read_input("input.txt");
 
   cout << "ex 1: " << part_1(example_input) << "\n";
-  // cout << "ex 2: " << part_2(example_input) << "\n";
+  cout << "ex 2: " << part_2(example_input) << "\n";
 
   cout << "part_1: " << part_1(problem_input) << "\n";
-  // cout << "part_2: " << part_2(problem_input) << "\n";
+  cout << "part_2: " << part_2(problem_input) << "\n";
 
   // assert(ans == 6);
 }
