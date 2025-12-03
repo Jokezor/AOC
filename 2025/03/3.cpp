@@ -434,89 +434,29 @@ ll part_1(vector<string> rows) {
 }
 
 unsigned ll part_2(vector<string> rows) {
-    // Now we will turn on exactly 12 of them.
-    // Its still true that the largest is the leftmost largest
-    // and then the rightmost etc.
-    // But we cannot always take the leftmost one but need always to take 12.
-    // We should take the 12 largest integers.
-    //
-    // But this won't be optimal: 43123456789999
-    // Yes, it is!
-    // Simply take all 9s, then all 8s etc.
-    // So we can count the number of digits.
-    // Then simply take 12 of the largest.
-    //
-    // For this we need a way to get both their index and count.
-    // {9: {4, [10,11,12,13]}}
-    // Then we simply go through this from 9->1
-    // And place them into the slots of 12 sized string!
-    // Then we cast it.
-    //
-    // We could either have map<char, pair<int
-    //
-
-    unsigned ll ans = 0;
-
+    ll ans = 0;
+    
     for (string row : rows) {
-        vector<vector<int>> digit_counts(9);
+        string batteries (12, '0');
+        
+        int max_ind = -1;
+        int new_max_ind = 0;
 
         int n = row.length();
 
-        // Count digits
-        for (int i=0; i < n; ++i) {
-            digit_counts[row[i] - '1'].push_back(i);
-        }
-
-        string batteries (n, '0');
-        int num_digits = 0;
-
-        // Find first digit to place.
-        // First find first digit which has
-        // (n- i) >= 12.
-        // Go through the digits in reverse order.
-        // Then once found, simply fill in the rest.
-
-        int digit_start = -1;
-        for (int i=8; i >= 0; --i) {
-            vector<int> digits = digit_counts[i];
-            sort(digits.begin(), digits.end());
-
-            for (int pos : digits) {
-                if (n - pos >= 12) {
-                    batteries[pos] = i + '1';
-                    digit_start = pos;
-                    ++num_digits;
-                    break;
+        for (int i=0; i < 12; ++i) {
+            for (int j=max_ind+1; j < n - 11 + i; ++j) {
+                if (row[j] > batteries[i]) {
+                    batteries[i] = row[j];
+                    new_max_ind = j;
                 }
             }
-            if (digit_start != -1) {
-                break;
-            }
+            max_ind = new_max_ind;
         }
-
-        // Now we should simply check for largest digits starting from digit_start index
-        for (int i=8; i >= 0; --i) {
-            vector<int> digits = digit_counts[i];
-
-            sort(digits.begin(), digits.end(), greater<int>());
-            for (int pos : digits) {
-                if (pos > digit_start) {
-                    batteries[pos] = i + '1';
-                    num_digits++;
-                }
-                if (num_digits == 12) {
-                    break;
-                }
-            }
-            if (num_digits == 12) {
-                break;
-            }
-        }
-        erase(batteries, '0');
-
-        assert(batteries.length() == 12);
-        ans += stoull(batteries);
+        
+        ans += stoll(batteries);
     }
+    
     return ans;
 }
 
