@@ -433,82 +433,44 @@ ll part_1(vector<string> rows) {
     return ans;
 }
 
-ll part_2(vector<string> rows) {
-    // Now we will turn on exactly 12 of them.
-    // Its still true that the largest is the leftmost largest
-    // and then the rightmost etc.
-    // But we cannot always take the leftmost one but need always to take 12.
-    // We should take the 12 largest integers.
-    //
-    // But this won't be optimal: 43123456789999
-    // Yes, it is!
-    // Simply take all 9s, then all 8s etc.
-    // So we can count the number of digits.
-    // Then simply take 12 of the largest.
-    //
-    // For this we need a way to get both their index and count.
-    // {9: {4, [10,11,12,13]}}
-    // Then we simply go through this from 9->1
-    // And place them into the slots of 12 sized string!
-    // Then we cast it.
-    //
-    // We could either have map<char, pair<int
-    //
-
+unsigned ll part_2(vector<string> rows) {
     ll ans = 0;
-
+    
     for (string row : rows) {
-        vector<vector<int>> digit_counts(9);
+        string stack = "";
+        
+        // Check instead as using a stack
+
         int n = row.length();
+        int target = 12;
 
-        // Count digits
         for (int i=0; i < n; ++i) {
-            digit_counts[row[i] - '1'].push_back(i);
-        }
-        ll row_ans = 0;
+            char current_char = row[i];
 
-        for (int i=8; i >= 0; --i) {
-            vector<int> digits = digit_counts[i];
-            int digit_start = -1;
+            // Key is to keep adding to string
+            // Then pop while its not the most optimal choice
+            // or if its too big
+            // And we need to have more
+            //
+            //
 
-            for (int pos : digits) {
-                digit_start = pos;
-                string batteries (n, '0');
-                batteries[pos] = i + '1';
-                int num_digits = 1;
-
-                for (int j=8; j >= 0; --j) {
-                    vector<int> other_digits = digit_counts[j];
-
-                    sort(other_digits.begin(), other_digits.end(), greater<int>());
-                    for (int other_pos : other_digits) {
-                        if (other_pos > digit_start) {
-                            batteries[other_pos] = j + '1';
-                            num_digits++;
-                        }
-
-                        if (num_digits == 12) {
-                            // We could pop one from here?
-                            break;
-                        }
-                    }
-                    if (num_digits == 12) {
-                        break;
-                    }
-                }
-                erase(batteries, '0');
-                if (batteries.length() == 12) {
-                    row_ans = max(row_ans, stoll(batteries));
-                }
+            // While not empty,
+            // We have a more optimal choice
+            // And we have enough chars left to fill up to the target
+            while (!stack.empty()
+                    && stack.back() < current_char
+                    && (stack.length() -1 + (n -i)) >= target) {
+                stack.pop_back();
+            }
+                    
+            if (stack.length() < target) {
+                stack.push_back(current_char);
             }
         }
-
-        // cout << row_ans << "\n";
-
-        ans += row_ans;
-
+        ans += stoll(stack);
     }
-
+    
+    
     return ans;
 }
 
