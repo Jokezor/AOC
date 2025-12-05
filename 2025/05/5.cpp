@@ -474,6 +474,10 @@ ll part_2(vector<string> rows) {
         }
     }
 
+    // Sort the ranges based on first index.
+    // Then look through them and take the maximum of the one less than left of the current
+    sort(ranges.begin(), ranges.end());
+
     // So we can keep account of the right - left +1
     // so 3-5 is covering 5-3 + 1 = 3 ids.
     // but the problem is overlapping.
@@ -481,15 +485,27 @@ ll part_2(vector<string> rows) {
     // We need to find the left that is <= current_left
     // And then find its right to see if the range is not already covered.
     //
-    for (ll ingredient : ingredients) {
-        for (pair<ll, ll> range: ranges) {
-            if (ingredient >= range.first && ingredient <= range.second) {
-                ++ans;
-                // Do not add more than once.
-                break;
-            }
+
+    for (int i=0; i < ranges.size(); ++i) {
+        pair<ll, ll> range = ranges[i];
+        
+        //cout << "{" << range.first << ", " << range.second << "}\n";
+        
+        ll left = range.first;
+        ll right = 0;
+        
+        // Check for all prior, what is the max they have?
+        for (int j=0; j < i; ++j) {
+            right = max(right, ranges[j].second);
+        }
+
+        ll indices_cover_by_current = range.second - range.first + 1;
+        ll indices_already_covered = 0;
+        if (right >= range.first) {
+            indices_already_covered = right - range.first + 1;
         }
         
+        ans += max(0ll, indices_cover_by_current - indices_already_covered);
     }
 
     return ans;
@@ -507,10 +523,10 @@ void solution() {
   vector<string> problem_input = read_input("input.txt");
 
   cout << "ex 1: " << part_1(example_input) << "\n";
-  // cout << "ex 2: " << part_2(example_input) << "\n";
+  cout << "ex 2: " << part_2(example_input) << "\n";
 
   cout << "part_1: " << part_1(problem_input) << "\n";
-  // cout << "part_2: " << part_2(problem_input) << "\n";
+  cout << "part_2: " << part_2(problem_input) << "\n";
 
 }
 
@@ -525,3 +541,4 @@ int main() {
     solution();
   return 0;
 }
+
