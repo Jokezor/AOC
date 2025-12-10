@@ -103,11 +103,17 @@ public:
       if (rank[a] < rank[b]) {
         swap(a, b);
       }
+      if (!is_connected(a, b)) {
+          set_size[a] += min(set_size[a], set_size[b]);
+      }
+      else {
+          cout << "Should never trigger!!" << "\n";
+          set_size[a] += abs(set_size[a] - set_size[b]);
+      }
       parent[b] = a;
       if (rank[a] == rank[b]) {
         rank[a]++;
       }
-      set_size[a] += set_size[b];
       set_size[b] = 0;
     }
   }
@@ -407,8 +413,8 @@ vector<string> read_input(string file_name) {
   return rows;
 }
 
-unsigned ll euclidian_norm(vector<ll> p1, vector<ll> p2) {
-    unsigned ll dist = 0;
+double euclidian_norm(vector<ll> p1, vector<ll> p2) {
+    double dist = 0;
 
     assert(p1.size() == p2.size());
     int n = p1.size();
@@ -416,7 +422,8 @@ unsigned ll euclidian_norm(vector<ll> p1, vector<ll> p2) {
     for (int i=0; i < n; ++i) {
         dist += pow((p1[i] - p2[i]), 2);
     }
-    return dist;
+
+    return sqrt(dist);
 }
 
 ll part_1(vector<string> rows, int iterations) {
@@ -450,7 +457,7 @@ ll part_1(vector<string> rows, int iterations) {
     // N^2 = 1M comparisons.
     // vector<vector<pair<ll, ll>>> distances(n, vector<pair<ll,ll>>(n));
 
-    vector<tuple<unsigned ll, ll, ll>> distances;
+    vector<tuple<double, ll, ll>> distances;
 
     // We could push this into a min heap.
     // Then keep popping?
@@ -459,7 +466,7 @@ ll part_1(vector<string> rows, int iterations) {
             if (i == j) {
                 continue;
             }
-            unsigned ll dist = euclidian_norm(junction_boxes[i], junction_boxes[j]);
+            double dist = euclidian_norm(junction_boxes[i], junction_boxes[j]);
             distances.push_back({dist, i, j});
         }
     }
@@ -480,7 +487,7 @@ ll part_1(vector<string> rows, int iterations) {
 
     int i=0;
     // Maybe they mean that we do not count if they are in the same circuit?
-    for (tuple<ll, ll, ll> dist : distances) {
+    for (tuple<double, ll, ll> dist : distances) {
         int first = get<1>(dist);
         int second = get<2>(dist);
 
@@ -499,7 +506,7 @@ ll part_1(vector<string> rows, int iterations) {
 
     // print(uf.set_size);
 
-    ans = 1;
+    ans = 1ull;
     for (int i=0; i < 3; ++i) {
         cout << uf.set_size[i] << "\n";
         ans *= uf.set_size[i];
