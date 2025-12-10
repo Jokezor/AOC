@@ -415,11 +415,33 @@ ll part_1(vector<string> rows) {
     // For each row, check preceding row, if '|' above a splitter, add '|'
     // to empty spaces.
 
-    for (int i=1; i < rows.size(); ++i) {
+    int n = rows.size();
+    int m = rows[0].length();
+
+    // Add S to the lower level if not '^'
+    for (int i=0; i < m; ++i) {
+        if (rows[0][i] == 'S') {
+            if (rows[1][i] != '^') {
+                rows[1][i] = 'S';
+            }
+        }
+    }
+
+    for (int i=1; i < n; ++i) {
         // Check above if 'S'
-        for (char c : rows[i]) {
-            if (c == 'S') {
-                if (rows[i+
+        for (int j=0; j < m; ++j) {
+            if (rows[i-1][j] == 'S') {
+                // We have a ray shining down, either split or set the light.
+                if (rows[i][j] == '^') {
+                    ++ans;
+                    // Set light on both sides. (They are never adjacent which would need extra care.
+                    rows[i][j-1] = 'S';
+                    rows[i][j+1] = 'S';
+                }
+                // Otherwise, propogate the ray.
+                else {
+                    rows[i][j] = 'S';
+                }
             }
         }
     }
@@ -428,10 +450,61 @@ ll part_1(vector<string> rows) {
 }
 
 
+// Can add memoization to check in first.
+unsigned long long memo[1000][1000];
+
+ll get_num_paths(vector<string> rows, int row, int col) {
+
+    if (memo[row][col]) {
+        return memo[row][col];
+    }
+
+    int n = rows.size();
+    int m = rows[0].length();
+
+    if (row == n-1) {
+        memo[row][col] = 1;
+        return memo[row][col];
+    }
+
+    ll ans = 0;
+
+    // Either we split
+    if (rows[row][col] == '^') {
+        // Branch off
+        ans += get_num_paths(rows, row+1, col+1);
+        ans += get_num_paths(rows, row+1, col-1);
+    }
+    // Or continue down
+    else {
+        ans += get_num_paths(rows, row+1, col);
+    }
+    memo[row][col] = ans;
+    return ans;
+}
+
 unsigned ll part_2(vector<string> rows) {
     ll ans = 0;
 
+    // Zero out memo
+    for (int i=0; i < 1000; ++i) {
+        for (int j=0; j < 1000; ++j) {
+            memo[i][j] = 0;
+        }
+    }
 
+    // Simply instead at each splitter,
+    // keep going down until we reach row n-1.
+    // Then add 1 to ans.
+    int n = rows.size();
+    int m = rows[0].length();
+
+    // Add S to the lower level if not '^'
+    for (int i=0; i < m; ++i) {
+        if (rows[0][i] == 'S') {
+            ans += get_num_paths(rows, 1, i);
+        }
+    }
 
     return ans;
 }
@@ -447,10 +520,10 @@ void solution() {
   vector<string> problem_input = read_input("input.txt");
 
   cout << "ex 1: " << part_1(example_input) << "\n";
-  // cout << "ex 2: " << part_2(example_input) << "\n";
+  cout << "ex 2: " << part_2(example_input) << "\n";
 
-  // cout << "part_1: " << part_1(problem_input) << "\n";
-  // cout << "part_2: " << part_2(problem_input) << "\n";
+  cout << "part_1: " << part_1(problem_input) << "\n";
+  cout << "part_2: " << part_2(problem_input) << "\n";
 
 }
 
