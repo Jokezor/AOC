@@ -108,6 +108,7 @@ public:
         rank[a]++;
       }
       set_size[a] += set_size[b];
+      set_size[b] = 0;
     }
   }
 
@@ -494,11 +495,13 @@ ll part_1(vector<string> rows, int iterations) {
     }
 
     // Now simply take biggest sets from set_size
-    sort(uf.set_size.begin(), uf.set_size.end(), greater<int>());
+    sort(uf.set_size.begin(), uf.set_size.end(), greater<ll>());
+
+    // print(uf.set_size);
 
     ans = 1;
     for (int i=0; i < 3; ++i) {
-        // cout << uf.set_size[i] << "\n";
+        cout << uf.set_size[i] << "\n";
         ans *= uf.set_size[i];
     }
 
@@ -527,6 +530,7 @@ void solution() {
   cout << "ex 1: " << part_1(example_input, 10) << "\n";
   // cout << "ex 2: " << part_2(example_input) << "\n";
 
+  // Still too high.
   cout << "part_1: " << part_1(problem_input, 1000) << "\n";
   // cout << "part_2: " << part_2(problem_input) << "\n";
 
