@@ -79,11 +79,13 @@ class UnionFind {
 public:
   int size;
   vector<int> parent;
+  vector<int> set_size;
   vector<int> rank;
 
   void make_set(int v) {
     parent[v] = v;
     rank[v] = 0;
+    set_size[v] = 1;
   }
 
   int find_set(int v) {
@@ -105,6 +107,7 @@ public:
       if (rank[a] == rank[b]) {
         rank[a]++;
       }
+      set_size[a] += set_size[b];
     }
   }
 
@@ -403,8 +406,8 @@ vector<string> read_input(string file_name) {
   return rows;
 }
 
-ll euclidian_norm(vector<ll> p1, vector<ll> p2) {
-    ll dist = 0;
+unsigned ll euclidian_norm(vector<ll> p1, vector<ll> p2) {
+    unsigned ll dist = 0;
 
     assert(p1.size() == p2.size());
     int n = p1.size();
@@ -415,8 +418,8 @@ ll euclidian_norm(vector<ll> p1, vector<ll> p2) {
     return dist;
 }
 
-ll part_1(vector<string> rows) {
-    ll ans = 0;
+ll part_1(vector<string> rows, int iterations) {
+    ll ans = 1;
 
     // Feels like union find?
     // We take each junction box
@@ -444,39 +447,67 @@ ll part_1(vector<string> rows) {
 
     // Compute the distance from each box to each other one.
     // N^2 = 1M comparisons.
-    vector<vector<pair<ll, ll>>> distances(n, vector<ll>(n-1));
+    // vector<vector<pair<ll, ll>>> distances(n, vector<pair<ll,ll>>(n));
+
+    vector<tuple<unsigned ll, ll, ll>> distances;
 
     // We could push this into a min heap.
     // Then keep popping?
-    //
     for (int i=0; i < n; ++i) {
         for (int j=0; j < n; ++j) {
             if (i == j) {
                 continue;
             }
-            ll dist = euclidian_norm(junction_boxes[i], junction_boxes[j]);
-            distances[i][j] = {dist, j};
+            unsigned ll dist = euclidian_norm(junction_boxes[i], junction_boxes[j]);
+            distances.push_back({dist, i, j});
         }
     }
 
-    // So first I need the reverse,
-    // I need distance -> index map instead of index -> distance.
-    //
-    // Then I need to keep track of which indices are in a set.
+    sort(distances.begin(), distances.end());
 
-    // First code it without any sorting.
+    // Use union find to handle merging of sets and seeing their sizes.
+    // We can access UnionFind.set_size and check for the largest 3 values.
+    UnionFind uf;
+    uf.size = n;
+    uf.parent = vector<int>(n);
+    uf.rank = vector<int>(n);
+    uf.set_size = vector<int>(n);
 
-    // vector<set<int>> ? How do I know which set to look for?
+    for (int i=0; i < n; ++i) {
+        uf.make_set(i);
+    }
 
-    // Now we have for each junction box i=1,...,n the distance to everyother box.
-    // But what we want is to connect boxes and then keep track of which are already connected.
+    int i=0;
+    // Maybe they mean that we do not count if they are in the same circuit?
+    for (tuple<ll, ll, ll> dist : distances) {
+        int first = get<1>(dist);
+        int second = get<2>(dist);
+
+        if (!uf.is_connected(first, second)) {
+            uf.union_sets(first, second);
+            ++i;
+        }
+
+        if (i == iterations) {
+            break;
+        }
+    }
+
+    // Now simply take biggest sets from set_size
+    sort(uf.set_size.begin(), uf.set_size.end(), greater<int>());
+
+    ans = 1;
+    for (int i=0; i < 3; ++i) {
+        // cout << uf.set_size[i] << "\n";
+        ans *= uf.set_size[i];
+    }
 
     return ans;
 }
 
 
-unsigned ll part_2(vector<string> rows) {
-    ll ans = 0;
+unsigned ll part_2(vector<string> rows, int iterations) {
+    ll ans = 1;
 
 
 
@@ -493,10 +524,10 @@ void solution() {
   vector<string> example_input = read_input("example_input.txt");
   vector<string> problem_input = read_input("input.txt");
 
-  cout << "ex 1: " << part_1(example_input) << "\n";
+  cout << "ex 1: " << part_1(example_input, 10) << "\n";
   // cout << "ex 2: " << part_2(example_input) << "\n";
 
-  // cout << "part_1: " << part_1(problem_input) << "\n";
+  cout << "part_1: " << part_1(problem_input, 1000) << "\n";
   // cout << "part_2: " << part_2(problem_input) << "\n";
 
 }
