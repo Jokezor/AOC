@@ -432,21 +432,12 @@ bool is_valid_tile(char tile) {
 unsigned ll part_2(vector<string> rows) {
     ll ans = 0;
 
+    // https://cp-algorithms.com/geometry/check-segments-intersection.html
+
     // Instead this slower approach we could look at the corners as lazers
     // Then we simply check that there is a line intersecting each of them.
     //
     // Also instead of having to fill the entire thing, this would solve for that.
-
-
-    // Either we could walk along, fill all the tiles inbetween with 'X'
-    // Or we could check that the point we choose has
-    // an '#' at or past the point we are going for.
-    //
-    // Meaning that for both points, we check from the point below
-    // We need to have a '#' above it.
-    // Further, that '#' need to be at the current j or after it.
-    //
-    // So we search rows[i][j], we find
 
     vector<pair<int, int>> tiles;
     for (string row : rows) {
@@ -475,120 +466,6 @@ unsigned ll part_2(vector<string> rows) {
     for (auto tile : tiles) {
         grid[tile.second][tile.first] = '#';
     }
-
-    sort(tiles.begin(), tiles.end());
-
-    vector<pair<int, int>> tiles_copy(n*m);
-
-    int tiles_index = 0;
-    for (auto tile : tiles) {
-        tiles_copy[tiles_index] = tile;
-        ++tiles_index;
-    }
-
-    // Paint horizontally
-    for (int i=0; i < tiles.size(); ++i) {
-        string row = grid[tiles[i].second];
-
-        int start = tiles[i].first + 1;
-        bool start_paint = true;
-
-        while (start < row.length()) {
-            if (row[start] == '#') {
-                start_paint = !start_paint;
-            }
-            if (start_paint) {
-                row[start] = 'O';
-                tiles_copy[tiles_index] = {start, tiles[i].second};
-                ++tiles_index;
-            }
-            ++start;
-        }
-        if (!start_paint) {
-            grid[tiles[i].second] = row;
-        }
-    }
-
-    printf("Painted horizontally");
-
-    // Paint vertically
-    for (int i=0; i < tiles.size(); ++i) {
-        string column = "";
-        
-        for (int j=0; j < n; ++j) {
-            column += grid[j][tiles[i].first];
-        }
-
-        int start = tiles[i].second + 1;
-        bool start_paint = true;
-
-        while (start < column.length()) {
-            if (column[start] == '#') {
-                start_paint = !start_paint;
-            }
-            if (start_paint) {
-                column[start] = 'O';
-            }
-            ++start;
-        }
-        if (!start_paint) {
-            for (int j=0; j < n; ++j) {
-                grid[j][tiles[i].first] = column[j];
-            }
-        }
-    }
-
-    printf("Paint the rest");
-
-    printf("Size of tiles_copy: %d", tiles_copy.size());
-
-
-    // Paint the rest.
-    // Well, we waste a lot of time if we do not start on tiles already.
-    for (int i=0; i < tiles_copy.size(); ++i) {
-        string column = "";
-
-        for (int j=0; j < n; ++j) {
-            column += grid[j][tiles_copy[i].first];
-        }
-        
-        bool start_paint = true;
-        int last_seen = tiles_copy[i].second;
-
-        int start = tiles_copy[i].second + 1;
-
-        while (start < n) {
-            if (column[start] == '#' || column[start] == 'O') {
-                start_paint = !start_paint;
-                last_seen = start;
-            }
-            if (start_paint) {
-                if (column[start] != '#') {
-                    column[start] = 'O';
-                }
-            }
-            ++start;
-        }
-        for (int j=0; j < last_seen; ++j) {
-            grid[j][tiles_copy[i].first] = column[j];
-        }
-
-        if (i % 100000 == 0) {
-            cout << (double)i/tiles_copy.size() << "% done" << "\n";
-        }
-    }
-
-    // Sort the tiles by x, then go until hit another '#'
-    // But if we do not hit any, simply do not add the new string.
-    // So its a new copy of the string.
-    // But then we would only paint corners.
-    // We want to paint the whole grid.
-    //
-    // We could start with corners in O(N^2)
-    // Then we could fill in by simply going through all from the top to bottom.
-    // We start painting if we hit a '#' or 'O' and we stop if we hit a '#' or 'O'.
-    // Then we are safe.
-
 
     pair<ll, ll> chosen_one;
     pair<ll, ll> chosen_two;
