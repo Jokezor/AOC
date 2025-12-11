@@ -432,6 +432,12 @@ bool is_valid_tile(char tile) {
 unsigned ll part_2(vector<string> rows) {
     ll ans = 0;
 
+    // Instead this slower approach we could look at the corners as lazers
+    // Then we simply check that there is a line intersecting each of them.
+    //
+    // Also instead of having to fill the entire thing, this would solve for that.
+
+
     // Either we could walk along, fill all the tiles inbetween with 'X'
     // Or we could check that the point we choose has
     // an '#' at or past the point we are going for.
@@ -442,7 +448,7 @@ unsigned ll part_2(vector<string> rows) {
     //
     // So we search rows[i][j], we find
 
-    vector<pair<ll, ll>> tiles;
+    vector<pair<int, int>> tiles;
     for (string row : rows) {
         vector<string> tile = split_by(row, ',');
         ll x = stoll(tile[0]);
@@ -450,8 +456,8 @@ unsigned ll part_2(vector<string> rows) {
         tiles.push_back({x, y});
     }
     
-    ll n = 0;
-    ll m = 0;
+    int n = 0;
+    int m = 0;
 
     for (auto tile : tiles) {
         m = max(m, tile.first);
@@ -461,6 +467,8 @@ unsigned ll part_2(vector<string> rows) {
     n += 2;
     m += 2;
 
+    cout << "n=" << n << ", m=" << m << "\n";
+
     vector<string> grid(n, string(m, '.'));
 
     // Fill in the area!
@@ -469,6 +477,14 @@ unsigned ll part_2(vector<string> rows) {
     }
 
     sort(tiles.begin(), tiles.end());
+
+    vector<pair<int, int>> tiles_copy(n*m);
+
+    int tiles_index = 0;
+    for (auto tile : tiles) {
+        tiles_copy[tiles_index] = tile;
+        ++tiles_index;
+    }
 
     // Paint horizontally
     for (int i=0; i < tiles.size(); ++i) {
@@ -483,6 +499,8 @@ unsigned ll part_2(vector<string> rows) {
             }
             if (start_paint) {
                 row[start] = 'O';
+                tiles_copy[tiles_index] = {start, tiles[i].second};
+                ++tiles_index;
             }
             ++start;
         }
@@ -490,6 +508,8 @@ unsigned ll part_2(vector<string> rows) {
             grid[tiles[i].second] = row;
         }
     }
+
+    printf("Painted horizontally");
 
     // Paint vertically
     for (int i=0; i < tiles.size(); ++i) {
@@ -518,26 +538,43 @@ unsigned ll part_2(vector<string> rows) {
         }
     }
 
-    for (int i=0; i < m; ++i) {
+    printf("Paint the rest");
+
+    printf("Size of tiles_copy: %d", tiles_copy.size());
+
+
+    // Paint the rest.
+    // Well, we waste a lot of time if we do not start on tiles already.
+    for (int i=0; i < tiles_copy.size(); ++i) {
         string column = "";
-        
-        for (int j=0; j < n; ++j) {
-            column += grid[j][i];
-        }
-        bool start_paint = false;
 
         for (int j=0; j < n; ++j) {
-            if (column[j] == '#' || column[j] == 'O') {
+            column += grid[j][tiles_copy[i].first];
+        }
+        
+        bool start_paint = true;
+        int last_seen = tiles_copy[i].second;
+
+        int start = tiles_copy[i].second + 1;
+
+        while (start < n) {
+            if (column[start] == '#' || column[start] == 'O') {
                 start_paint = !start_paint;
+                last_seen = start;
             }
             if (start_paint) {
-                if (column[j] != '#') {
-                    column[j] = 'O';
+                if (column[start] != '#') {
+                    column[start] = 'O';
                 }
             }
+            ++start;
         }
-        for (int j=0; j < n; ++j) {
-            grid[j][i] = column[j];
+        for (int j=0; j < last_seen; ++j) {
+            grid[j][tiles_copy[i].first] = column[j];
+        }
+
+        if (i % 100000 == 0) {
+            cout << (double)i/tiles_copy.size() << "% done" << "\n";
         }
     }
 
@@ -553,9 +590,8 @@ unsigned ll part_2(vector<string> rows) {
     // Then we are safe.
 
 
-    for (string row : grid) {
-        cout << row << "\n";
-    }
+    pair<ll, ll> chosen_one;
+    pair<ll, ll> chosen_two;
 
     for (int i=0; i < tiles.size(); ++i) {
         for (int j=0; j < tiles.size(); ++j) {
@@ -565,15 +601,24 @@ unsigned ll part_2(vector<string> rows) {
             if (is_valid_tile(right_corner) && is_valid_tile(left_corner)) {
                 ll area = abs(tiles[i].first - tiles[j].first + 1) *abs(tiles[i].second - tiles[j].second +1);
                 if (area > ans) {
+                    chosen_one = tiles[i];
+                    chosen_two = tiles[j];
                     ans = area;
-                    cout << i << ", " <<  j << "\n";
-                    cout << right_corner << ", " << left_corner << "\n";
+                    // cout << i << ", " <<  j << "\n";
+                    // cout << right_corner << ", " << left_corner << "\n";
                 }
             }
         }
     }
 
+    grid[chosen_one.second][chosen_one.first] = '1';
+    grid[chosen_two.second][chosen_two.first] = '1';
 
+
+    // cout << "\n";
+    // for (string row : grid) {
+    //     cout << row << "\n";
+    // }
     return ans;
 }
 
@@ -591,13 +636,13 @@ void solution() {
   cout << "ex 2: " << part_2(example_input) << "\n";
 
   cout << "part_1: " << part_1(problem_input) << "\n";
-  // cout << "part_2: " << part_2(problem_input) << "\n";
+  cout << "part_2: " << part_2(problem_input) << "\n";
 
 }
 
 int main() {
-  ios_base::sync_with_stdio(false);
-  cin.tie(NULL);
+  // ios_base::sync_with_stdio(false);
+  // cin.tie(NULL);
 
   int t = 1;
   // cin >> t;
