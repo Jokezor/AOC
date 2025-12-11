@@ -403,81 +403,175 @@ vector<string> read_input(string file_name) {
   return rows;
 }
 
-ll euclidian_norm(vector<ll> p1, vector<ll> p2) {
-    ll dist = 0;
-
-    assert(p1.size() == p2.size());
-    int n = p1.size();
-
-    for (int i=0; i < n; ++i) {
-        dist += pow((p1[i] - p2[i]), 2);
-    }
-    return dist;
-}
-
 ll part_1(vector<string> rows) {
     ll ans = 0;
-
-    // Feels like union find?
-    // We take each junction box
-    //
-    // But also focus on the actual problem.
-    // If we were to take the boxes, compute the distance
-    // from one box to everyother box,
-    // then we need to compute the distance metric only once,
-    // it does not change.
-    //
-    // Its still O(N^2).
-    // Code it first, then look into how to make it with union find?
-    int n = rows.size();
-
-    vector<vector<ll>> junction_boxes(n, vector<ll>(3));
-
-    for (int i=0; i < n; ++i) {
-        string row = rows[i];
-        vector<string> split_row = split_by(row, ',');
-
-        for (int j=0; j < 3; ++j) {
-            junction_boxes[i][j] = stoll(split_row[j]);
-        }
+    vector<pair<ll, ll>> tiles;
+    for (string row : rows) {
+        vector<string> tile = split_by(row, ',');
+        ll x = stoll(tile[0]);
+        ll y = stoll(tile[1]);
+        tiles.push_back({x, y});
     }
-
-    // Compute the distance from each box to each other one.
-    // N^2 = 1M comparisons.
-    vector<vector<pair<ll, ll>>> distances(n, vector<ll>(n-1));
-
-    // We could push this into a min heap.
-    // Then keep popping?
-    //
+    
+    int n = rows.size();
     for (int i=0; i < n; ++i) {
         for (int j=0; j < n; ++j) {
-            if (i == j) {
-                continue;
-            }
-            ll dist = euclidian_norm(junction_boxes[i], junction_boxes[j]);
-            distances[i][j] = {dist, j};
+            ans = max(ans, abs(tiles[i].first - tiles[j].first + 1)
+            *abs(tiles[i].second - tiles[j].second +1));
         }
     }
 
-    // So first I need the reverse,
-    // I need distance -> index map instead of index -> distance.
-    //
-    // Then I need to keep track of which indices are in a set.
-
-    // First code it without any sorting.
-
-    // vector<set<int>> ? How do I know which set to look for?
-
-    // Now we have for each junction box i=1,...,n the distance to everyother box.
-    // But what we want is to connect boxes and then keep track of which are already connected.
 
     return ans;
 }
 
+bool is_valid_tile(char tile) {
+    return (tile == 'O' || tile == '#');
+}
 
 unsigned ll part_2(vector<string> rows) {
     ll ans = 0;
 
+    // Either we could walk along, fill all the tiles inbetween with 'X'
+    // Or we could check that the point we choose has
+    // an '#' at or past the point we are going for.
+    //
+    // Meaning that for both points, we check from the point below
+    // We need to have a '#' above it.
+    // Further, that '#' need to be at the current j or after it.
+    //
+    // So we search rows[i][j], we find
+
+    vector<pair<ll, ll>> tiles;
+    for (string row : rows) {
+        vector<string> tile = split_by(row, ',');
+        ll x = stoll(tile[0]);
+        ll y = stoll(tile[1]);
+        tiles.push_back({x, y});
+    }
+    
+    ll n = 0;
+    ll m = 0;
+
+    for (auto tile : tiles) {
+        m = max(m, tile.first);
+        n = max(n, tile.second);
+    }
+
+    n += 2;
+    m += 2;
+
+    vector<string> grid(n, string(m, '.'));
+
+    // Fill in the area!
+    for (auto tile : tiles) {
+        grid[tile.second][tile.first] = '#';
+    }
+
+    sort(tiles.begin(), tiles.end());
+
+    // Paint horizontally
+    for (int i=0; i < tiles.size(); ++i) {
+        string row = grid[tiles[i].second];
+
+        int start = tiles[i].first + 1;
+        bool start_paint = true;
+
+        while (start < row.length()) {
+            if (row[start] == '#') {
+                start_paint = !start_paint;
+            }
+            if (start_paint) {
+                row[start] = 'O';
+            }
+            ++start;
+        }
+        if (!start_paint) {
+            grid[tiles[i].second] = row;
+        }
+    }
+
+    // Paint vertically
+    for (int i=0; i < tiles.size(); ++i) {
+        string column = "";
+        
+        for (int j=0; j < n; ++j) {
+            column += grid[j][tiles[i].first];
+        }
+
+        int start = tiles[i].second + 1;
+        bool start_paint = true;
+
+        while (start < column.length()) {
+            if (column[start] == '#') {
+                start_paint = !start_paint;
+            }
+            if (start_paint) {
+                column[start] = 'O';
+            }
+            ++start;
+        }
+        if (!start_paint) {
+            for (int j=0; j < n; ++j) {
+                grid[j][tiles[i].first] = column[j];
+            }
+        }
+    }
+
+    for (int i=0; i < m; ++i) {
+        string column = "";
+        
+        for (int j=0; j < n; ++j) {
+            column += grid[j][i];
+        }
+        bool start_paint = false;
+
+        for (int j=0; j < n; ++j) {
+            if (column[j] == '#' || column[j] == 'O') {
+                start_paint = !start_paint;
+            }
+            if (start_paint) {
+                if (column[j] != '#') {
+                    column[j] = 'O';
+                }
+            }
+        }
+        for (int j=0; j < n; ++j) {
+            grid[j][i] = column[j];
+        }
+    }
+
+    // Sort the tiles by x, then go until hit another '#'
+    // But if we do not hit any, simply do not add the new string.
+    // So its a new copy of the string.
+    // But then we would only paint corners.
+    // We want to paint the whole grid.
+    //
+    // We could start with corners in O(N^2)
+    // Then we could fill in by simply going through all from the top to bottom.
+    // We start painting if we hit a '#' or 'O' and we stop if we hit a '#' or 'O'.
+    // Then we are safe.
+
+
+    for (string row : grid) {
+        cout << row << "\n";
+    }
+
+    for (int i=0; i < tiles.size(); ++i) {
+        for (int j=0; j < tiles.size(); ++j) {
+            char right_corner = grid[tiles[i].second][tiles[j].first];
+            char left_corner = grid[tiles[j].second][tiles[i].first];
+
+            if (is_valid_tile(right_corner) && is_valid_tile(left_corner)) {
+                ll area = abs(tiles[i].first - tiles[j].first + 1) *abs(tiles[i].second - tiles[j].second +1);
+                if (area > ans) {
+                    ans = area;
+                    cout << i << ", " <<  j << "\n";
+                    cout << right_corner << ", " << left_corner << "\n";
+                }
+            }
+        }
+    }
 
 
     return ans;
@@ -494,9 +588,9 @@ void solution() {
   vector<string> problem_input = read_input("input.txt");
 
   cout << "ex 1: " << part_1(example_input) << "\n";
-  // cout << "ex 2: " << part_2(example_input) << "\n";
+  cout << "ex 2: " << part_2(example_input) << "\n";
 
-  // cout << "part_1: " << part_1(problem_input) << "\n";
+  cout << "part_1: " << part_1(problem_input) << "\n";
   // cout << "part_2: " << part_2(problem_input) << "\n";
 
 }
