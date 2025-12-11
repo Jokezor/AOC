@@ -104,7 +104,7 @@ public:
         swap(a, b);
       }
       if (!is_connected(a, b)) {
-          set_size[a] += min(set_size[a], set_size[b]);
+          set_size[a] += set_size[b];
       }
       else {
           cout << "Should never trigger!!" << "\n";
@@ -477,26 +477,37 @@ ll part_1(vector<string> rows, int iterations) {
     // We can access UnionFind.set_size and check for the largest 3 values.
     UnionFind uf;
     uf.size = n;
-    uf.parent = vector<int>(n);
-    uf.rank = vector<int>(n);
-    uf.set_size = vector<int>(n);
+    uf.parent = vector<int>(n, 0);
+    uf.rank = vector<int>(n, 0);
+    uf.set_size = vector<int>(n, 0);
 
     for (int i=0; i < n; ++i) {
         uf.make_set(i);
     }
 
     int i=0;
+    int total_iterations = 0;
+
+    set<pair<int, int>> seen_points;
+
     // Maybe they mean that we do not count if they are in the same circuit?
     for (tuple<double, ll, ll> dist : distances) {
         int first = get<1>(dist);
         int second = get<2>(dist);
 
-        if (!uf.is_connected(first, second)) {
-            uf.union_sets(first, second);
-            ++i;
+        if (first < second) {
+            swap(first, second);
         }
 
+        if (!seen_points.contains({first, second})) {
+            uf.union_sets(first, second);
+            ++i;
+            seen_points.insert({first, second});
+        }
+        ++total_iterations;
+
         if (i == iterations) {
+            cout << "total_iterations: " << total_iterations << "\n";
             break;
         }
     }
@@ -519,7 +530,76 @@ ll part_1(vector<string> rows, int iterations) {
 unsigned ll part_2(vector<string> rows, int iterations) {
     ll ans = 1;
 
+    int n = rows.size();
 
+    vector<vector<ll>> junction_boxes(n, vector<ll>(3));
+
+    for (int i=0; i < n; ++i) {
+        string row = rows[i];
+        vector<string> split_row = split_by(row, ',');
+
+        for (int j=0; j < 3; ++j) {
+            junction_boxes[i][j] = stoll(split_row[j]);
+        }
+    }
+
+    // Compute the distance from each box to each other one.
+    // N^2 = 1M comparisons.
+    // vector<vector<pair<ll, ll>>> distances(n, vector<pair<ll,ll>>(n));
+
+    vector<tuple<double, ll, ll>> distances;
+
+    // We could push this into a min heap.
+    // Then keep popping?
+    for (int i=0; i < n; ++i) {
+        for (int j=0; j < n; ++j) {
+            if (i == j) {
+                continue;
+            }
+            double dist = euclidian_norm(junction_boxes[i], junction_boxes[j]);
+            distances.push_back({dist, i, j});
+        }
+    }
+
+    sort(distances.begin(), distances.end());
+
+    // Use union find to handle merging of sets and seeing their sizes.
+    // We can access UnionFind.set_size and check for the largest 3 values.
+    UnionFind uf;
+    uf.size = n;
+    uf.parent = vector<int>(n, 0);
+    uf.rank = vector<int>(n, 0);
+    uf.set_size = vector<int>(n, 0);
+
+    for (int i=0; i < n; ++i) {
+        uf.make_set(i);
+    }
+
+    int total_iterations = 0;
+
+    set<pair<int, int>> seen_points;
+
+    // Maybe they mean that we do not count if they are in the same circuit?
+    for (tuple<double, ll, ll> dist : distances) {
+        int first = get<1>(dist);
+        int second = get<2>(dist);
+
+        if (first > second) {
+            swap(first, second);
+        }
+
+        if (!seen_points.contains({first, second})) {
+            uf.union_sets(first, second);
+            seen_points.insert({first, second});
+        }
+        ++total_iterations;
+        
+        if (uf.set_size[uf.parent[first]] == n) {
+            ans = junction_boxes[first][0] * junction_boxes[second][0];
+            cout << "total_iterations: " << total_iterations << "\n";
+            break;
+        }
+    }
 
     return ans;
 }
@@ -535,11 +615,10 @@ void solution() {
   vector<string> problem_input = read_input("input.txt");
 
   cout << "ex 1: " << part_1(example_input, 10) << "\n";
-  // cout << "ex 2: " << part_2(example_input) << "\n";
+  cout << "ex 2: " << part_2(example_input, 10) << "\n";
 
-  // Still too high.
   cout << "part_1: " << part_1(problem_input, 1000) << "\n";
-  // cout << "part_2: " << part_2(problem_input) << "\n";
+  cout << "part_2: " << part_2(problem_input, 1000) << "\n";
 
 }
 
