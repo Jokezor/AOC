@@ -10,8 +10,8 @@ using namespace std;
 
 #define ll long long
 #define all(x) x.begin(), x.end()
-#define MIN(v) *min_element(all(v))
-#define MAX(v) *max_element(all(v))
+//#define MIN(v) *min_element(all(v))
+//#define MAX(v) *max_element(all(v))
 #define LB(c, x) distance((c).begin(), lower_bound(all(c), (x)))
 
 typedef __gnu_pbds::tree<int, __gnu_pbds::null_type, less<int>,
@@ -378,7 +378,16 @@ const numeric_limits<double> DOUBLE;
 const double MIN = DOUBLE.min();
 const double MAX = DOUBLE.max();
 
-struct Point { const double x, y; };
+struct Point { 
+    const double x, y; 
+
+    bool operator==(const Point &p) const {
+        return x == p.x && y == p.y;
+    }
+    bool operator!=(const Point &p) const {
+        return !operator==(p);
+    }
+};
 
 struct Edge {
     const Point a, b;
@@ -392,6 +401,21 @@ struct Edge {
         auto blue = abs(a.x - p.x) > MIN ? (p.y - a.y) / (p.x - a.x) : MAX;
         auto red = abs(a.x - b.x) > MIN ? (b.y - a.y) / (b.x - a.x) : MAX;
         return blue >= red;
+    }
+    bool on_segment(const Point& p) const {
+        double cross = (p.x - a.x) * (b.y - a.y) - (p.y - a.y) * (b.x - a.x);
+        if (abs(cross) > epsilon) return false;
+
+        if (p.x < min(a.x, b.x) - epsilon || p.x > max(a.x, b.x) + epsilon) return false;
+        if (p.y < min(a.y, b.y) - epsilon || p.y > max(a.y, b.y) + epsilon) return false;
+        return true;
+    }
+
+    bool operator==(const Edge &rhs) const {
+        return (a == rhs.a && b == rhs.b) || (a == rhs.b && b == rhs.a);
+    }
+    bool operator!=(const Edge &rhs) const {
+        return !operator==(rhs);
     }
 };
 
@@ -473,112 +497,130 @@ bool is_valid_tile(char tile) {
     return (tile == 'O' || tile == '#');
 }
 
+bool in_range(ll val, ll min_val, ll max_val) {
+    return val > min_val && val < max_val;
+}
+
+bool strict_intersection(Point a, Point b, Point c, Point d) {
+    bool intersects = false;
+
+    return intersects;
+}
+
 unsigned ll part_2(vector<string> rows) {
     ll ans = 0;
 
-    // https://cp-algorithms.com/geometry/check-segments-intersection.html
-
-    // Instead this slower approach we could look at the corners as lazers
-    // Then we simply check that there is a line intersecting each of them.
-    //
-    // Also instead of having to fill the entire thing, this would solve for that.
-
-    vector<pair<int, int>> tiles;
+    vector<pair<ll, ll>> tiles;
     for (string row : rows) {
         vector<string> tile = split_by(row, ',');
         ll x = stoll(tile[0]);
         ll y = stoll(tile[1]);
         tiles.push_back({x, y});
     }
-    
-    int n = 0;
-    int m = 0;
-
-    for (auto tile : tiles) {
-        m = max(m, tile.first);
-        n = max(n, tile.second);
-    }
-
-    n += 2;
-    m += 2;
-
-    vector<string> string_grid(n, string(m, '.'));
-
-    for (auto tile : tiles) {
-        string_grid[tile.second][tile.first] = '#';
-    }
-
     Figure grid;
-    grid.name = "grid";
 
-    // horizontally
-    sort(tiles.begin(), tiles.end());
     for (int i=1; i < tiles.size(); ++i) {
-        if (tiles[i].first == tiles[i-1].first) {
-            Point p1 = {(double)tiles[i-1].second, (double)tiles[i-1].first};
-            Point p2 = {(double)tiles[i].second, (double)tiles[i].first};
-            grid.edges.push_back(Edge{p1, p2});
-        }
+        Point p1 = {(double)tiles[i-1].second, (double)tiles[i-1].first};
+        Point p2 = {(double)tiles[i].second, (double)tiles[i].first};
+        grid.edges.push_back(Edge{p1, p2});
     }
-
-    // vertically
-    sort(tiles.begin(), tiles.end(), [](pair<int, int> &p1, pair<int, int> &p2) {
-            return p1.second < p2.second;
-    });
-    for (int i=1; i < tiles.size(); ++i) {
-        if (tiles[i].second == tiles[i-1].second) {
-            Point p1 = {(double)tiles[i-1].second, (double)tiles[i-1].first};
-            Point p2 = {(double)tiles[i].second, (double)tiles[i].first};
-            grid.edges.push_back(Edge{p1, p2});
-        }
-    }
-
-    // Now try to check if point is in figure.
-    //
-
-    pair<ll, ll> chosen_one;
-    pair<ll, ll> chosen_two;
-    pair<ll, ll> c_1;
-    pair<ll, ll> c_2;
+    // Last to first
+    Point p1 = {(double)tiles[tiles.size()-1].second, (double)tiles[tiles.size()-1].first};
+    Point p2 = {(double)tiles[0].second, (double)tiles[0].first};
+    grid.edges.push_back(Edge{p1, p2});
 
     for (int i=0; i < tiles.size(); ++i) {
-        for (int j=0; j < tiles.size(); ++j) {
+        for (int j=i+1; j < tiles.size(); ++j) {
             Point p1 = {(double)tiles[i].second, (double)tiles[j].first};
             Point p2 = {(double)tiles[j].second, (double)tiles[i].first};
-
-            vector<Point> points = {p1, p2};
-
-            // if (tiles[i].first == 9 && tiles[j].first == 2) {
-            //     grid.check(points, cout);
-            //     // cout << (grid.contains(p1) && grid.contains(p2)) << "\n";
-            // }
-
             Point tile_1 = {(double)tiles[i].second, (double)tiles[i].first};
             Point tile_2 = {(double)tiles[j].second, (double)tiles[j].first};
+            
+            vector<Point> points = {tile_1, p1, tile_2, p2, tile_1};
 
-            // It seems tiles not found??
-            if (grid.contains(p1) && grid.contains(p2) && grid.contains(tile_1) && grid.contains(tile_2)) {
-                ll area = abs(tiles[i].first - tiles[j].first + 1) *abs(tiles[i].second - tiles[j].second +1);
-                if (area > ans) {
-                    chosen_one = tiles[i];
-                    chosen_two = tiles[j];
-                    c_1 = {p1.x, p1.y};
-                    c_2 = {p2.x, p2.y};
+            bool p1_valid = grid.contains(p1);
+            if (!p1_valid) {
+                for (const auto& edge : grid.edges) {
+                    if (edge.on_segment(p1)) {
+                        p1_valid = true;
+                        break;
+                    }
+                }
+            }
+
+            bool p2_valid = grid.contains(p2);
+            if (!p2_valid) {
+                for (const auto& edge : grid.edges) {
+                    if (edge.on_segment(p2)) {
+                        p2_valid = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (p1_valid && p2_valid) {
+                bool none_inside = true;
+                ll min_x = min(tile_1.x, tile_2.x);
+                ll max_x = max(tile_1.x, tile_2.x);
+                ll min_y = min(tile_1.y, tile_2.y);
+                ll max_y = max(tile_1.y, tile_2.y);
+                
+                for (const auto tile : tiles) {
+                    ll t_x = tile.second;
+                    ll t_y = tile.first;
+                    if (in_range(t_x, min_x, max_x) && in_range(t_y, min_y, max_y)) {
+                        none_inside = false;
+                        break;
+                    }
+                }
+                
+                bool does_not_cross = true;
+                for (auto edge : grid.edges) {
+                    Point a = edge.a;
+                    Point b = edge.b;
+
+                    double target_xs[] = {(double)min_x, (double)max_x};
+                    for (double x : target_xs) {
+                        if (in_range(x, min(a.x, b.x), max(a.x, b.x))) {
+                            double t = (x - a.x) / (b.x - a.x);
+                            double y_hit = a.y + t * (b.y - a.y);
+
+                            if (in_range(y_hit, (double)min_y, (double)max_y)) {
+                                does_not_cross = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (!does_not_cross) {
+                        break;
+                    }
+
+                    double target_ys[] = {(double)min_y, (double)max_y};
+                    for (double y : target_ys) {
+                        if (in_range(y, min(a.y, b.y), max(a.y, b.y))) {
+                            double t = (y - a.y) / (b.y - a.y);
+                            double x_hit = a.x + t * (b.x - a.x);
+
+                            if (in_range(x_hit, (double)min_x, (double)max_x)) {
+                                does_not_cross = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (!does_not_cross) {
+                        break;
+                    }
+                }
+                ll side = abs(tile_2.x - tile_1.x) + 1ll;
+                ll height = abs(tile_2.y - tile_1.y) + 1ll;
+                ll area = side * height;
+                
+                if (does_not_cross && none_inside && area > ans) {
                     ans = area;
                 }
             }
         }
     }
-
-    string_grid[c_1.first][c_1.second] = '2';
-    string_grid[c_2.first][c_2.second] = '2';
-    string_grid[chosen_one.second][chosen_one.first] = '1';
-    string_grid[chosen_two.second][chosen_two.first] = '1';
-
-    // cout << "\n";
-    // for (string row : string_grid) {
-    //     cout << row << "\n";
-    // }
 
     return ans;
 }
@@ -612,4 +654,3 @@ int main() {
     solution();
   return 0;
 }
-
