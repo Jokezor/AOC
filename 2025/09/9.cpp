@@ -372,6 +372,50 @@ bool check_inter(const pt& a, const pt& b, const pt& c, const pt& d) {
            sgn(c.cross(d, a)) != sgn(c.cross(d, b));
 }
 
+// Ray-casting algorithm
+const double epsilon = numeric_limits<float>().epsilon();
+const numeric_limits<double> DOUBLE;
+const double MIN = DOUBLE.min();
+const double MAX = DOUBLE.max();
+
+struct Point { const double x, y; };
+
+struct Edge {
+    const Point a, b;
+
+    bool operator()(const Point& p) const
+    {
+        if (a.y > b.y) return Edge{ b, a }(p);
+        if (p.y == a.y || p.y == b.y) return operator()({ p.x, p.y + epsilon });
+        if (p.y > b.y || p.y < a.y || p.x > max(a.x, b.x)) return false;
+        if (p.x < min(a.x, b.x)) return true;
+        auto blue = abs(a.x - p.x) > MIN ? (p.y - a.y) / (p.x - a.x) : MAX;
+        auto red = abs(a.x - b.x) > MIN ? (b.y - a.y) / (b.x - a.x) : MAX;
+        return blue >= red;
+    }
+};
+
+struct Figure {
+    string  name;
+    vector<Edge> edges;
+
+    bool contains(const Point& p) const
+    {
+        auto c = 0;
+        for (auto e : edges) if (e(p)) c++;
+        return c % 2 != 0;
+    }
+
+    template<unsigned char W = 3>
+    void check(vector<Point>& points, ostream& os) const
+    {
+        os << "Is point inside figure " << name <<  '?' << endl;
+        for (auto p : points)
+            os << "  (" << setw(W) << p.x << ',' << setw(W) << p.y << "): " << boolalpha << contains(p) << endl;
+        os << endl;
+    }
+};
+
 
 vector<string> split_by(string s, char delimiter) {
     vector<string> result;
@@ -458,44 +502,84 @@ unsigned ll part_2(vector<string> rows) {
     n += 2;
     m += 2;
 
-    cout << "n=" << n << ", m=" << m << "\n";
+    vector<string> string_grid(n, string(m, '.'));
 
-    vector<string> grid(n, string(m, '.'));
-
-    // Fill in the area!
     for (auto tile : tiles) {
-        grid[tile.second][tile.first] = '#';
+        string_grid[tile.second][tile.first] = '#';
     }
+
+    Figure grid;
+    grid.name = "grid";
+
+    // horizontally
+    sort(tiles.begin(), tiles.end());
+    for (int i=1; i < tiles.size(); ++i) {
+        if (tiles[i].first == tiles[i-1].first) {
+            Point p1 = {(double)tiles[i-1].second, (double)tiles[i-1].first};
+            Point p2 = {(double)tiles[i].second, (double)tiles[i].first};
+            grid.edges.push_back(Edge{p1, p2});
+        }
+    }
+
+    // vertically
+    sort(tiles.begin(), tiles.end(), [](pair<int, int> &p1, pair<int, int> &p2) {
+            return p1.second < p2.second;
+    });
+    for (int i=1; i < tiles.size(); ++i) {
+        if (tiles[i].second == tiles[i-1].second) {
+            Point p1 = {(double)tiles[i-1].second, (double)tiles[i-1].first};
+            Point p2 = {(double)tiles[i].second, (double)tiles[i].first};
+            grid.edges.push_back(Edge{p1, p2});
+        }
+    }
+
+    // Now try to check if point is in figure.
+    //
 
     pair<ll, ll> chosen_one;
     pair<ll, ll> chosen_two;
+    pair<ll, ll> c_1;
+    pair<ll, ll> c_2;
 
     for (int i=0; i < tiles.size(); ++i) {
         for (int j=0; j < tiles.size(); ++j) {
-            char right_corner = grid[tiles[i].second][tiles[j].first];
-            char left_corner = grid[tiles[j].second][tiles[i].first];
+            Point p1 = {(double)tiles[i].second, (double)tiles[j].first};
+            Point p2 = {(double)tiles[j].second, (double)tiles[i].first};
 
-            if (is_valid_tile(right_corner) && is_valid_tile(left_corner)) {
+            vector<Point> points = {p1, p2};
+
+            // if (tiles[i].first == 9 && tiles[j].first == 2) {
+            //     grid.check(points, cout);
+            //     // cout << (grid.contains(p1) && grid.contains(p2)) << "\n";
+            // }
+
+            Point tile_1 = {(double)tiles[i].second, (double)tiles[i].first};
+            Point tile_2 = {(double)tiles[j].second, (double)tiles[j].first};
+
+            // It seems tiles not found??
+            if (grid.contains(p1) && grid.contains(p2) && grid.contains(tile_1) && grid.contains(tile_2)) {
                 ll area = abs(tiles[i].first - tiles[j].first + 1) *abs(tiles[i].second - tiles[j].second +1);
                 if (area > ans) {
                     chosen_one = tiles[i];
                     chosen_two = tiles[j];
+                    c_1 = {p1.x, p1.y};
+                    c_2 = {p2.x, p2.y};
                     ans = area;
-                    // cout << i << ", " <<  j << "\n";
-                    // cout << right_corner << ", " << left_corner << "\n";
                 }
             }
         }
     }
 
-    grid[chosen_one.second][chosen_one.first] = '1';
-    grid[chosen_two.second][chosen_two.first] = '1';
-
+    string_grid[c_1.first][c_1.second] = '2';
+    string_grid[c_2.first][c_2.second] = '2';
+    string_grid[chosen_one.second][chosen_one.first] = '1';
+    string_grid[chosen_two.second][chosen_two.first] = '1';
 
     // cout << "\n";
-    // for (string row : grid) {
+    // for (string row : string_grid) {
     //     cout << row << "\n";
     // }
+
     return ans;
 }
 
