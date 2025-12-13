@@ -10,8 +10,8 @@ using namespace std;
 
 #define ll long long
 #define all(x) x.begin(), x.end()
-#define MIN(v) *min_element(all(v))
-#define MAX(v) *max_element(all(v))
+//#define MIN(v) *min_element(all(v))
+//#define MAX(v) *max_element(all(v))
 #define LB(c, x) distance((c).begin(), lower_bound(all(c), (x)))
 
 typedef __gnu_pbds::tree<int, __gnu_pbds::null_type, less<int>,
@@ -372,6 +372,74 @@ bool check_inter(const pt& a, const pt& b, const pt& c, const pt& d) {
            sgn(c.cross(d, a)) != sgn(c.cross(d, b));
 }
 
+// Ray-casting algorithm
+const double epsilon = numeric_limits<float>().epsilon();
+const numeric_limits<double> DOUBLE;
+const double MIN = DOUBLE.min();
+const double MAX = DOUBLE.max();
+
+struct Point { 
+    const double x, y; 
+
+    bool operator==(const Point &p) const {
+        return x == p.x && y == p.y;
+    }
+    bool operator!=(const Point &p) const {
+        return !operator==(p);
+    }
+};
+
+struct Edge {
+    const Point a, b;
+
+    bool operator()(const Point& p) const
+    {
+        if (a.y > b.y) return Edge{ b, a }(p);
+        if (p.y == a.y || p.y == b.y) return operator()({ p.x, p.y + epsilon });
+        if (p.y > b.y || p.y < a.y || p.x > max(a.x, b.x)) return false;
+        if (p.x < min(a.x, b.x)) return true;
+        auto blue = abs(a.x - p.x) > MIN ? (p.y - a.y) / (p.x - a.x) : MAX;
+        auto red = abs(a.x - b.x) > MIN ? (b.y - a.y) / (b.x - a.x) : MAX;
+        return blue >= red;
+    }
+    bool on_segment(const Point& p) const {
+        double cross = (p.x - a.x) * (b.y - a.y) - (p.y - a.y) * (b.x - a.x);
+        if (abs(cross) > epsilon) return false;
+
+        if (p.x < min(a.x, b.x) - epsilon || p.x > max(a.x, b.x) + epsilon) return false;
+        if (p.y < min(a.y, b.y) - epsilon || p.y > max(a.y, b.y) + epsilon) return false;
+        return true;
+    }
+
+    bool operator==(const Edge &rhs) const {
+        return (a == rhs.a && b == rhs.b) || (a == rhs.b && b == rhs.a);
+    }
+    bool operator!=(const Edge &rhs) const {
+        return !operator==(rhs);
+    }
+};
+
+struct Figure {
+    string  name;
+    vector<Edge> edges;
+
+    bool contains(const Point& p) const
+    {
+        auto c = 0;
+        for (auto e : edges) if (e(p)) c++;
+        return c % 2 != 0;
+    }
+
+    template<unsigned char W = 3>
+    void check(vector<Point>& points, ostream& os) const
+    {
+        os << "Is point inside figure " << name <<  '?' << endl;
+        for (auto p : points)
+            os << "  (" << setw(W) << p.x << ',' << setw(W) << p.y << "): " << boolalpha << contains(p) << endl;
+        os << endl;
+    }
+};
+
 
 vector<string> split_by(string s, char delimiter) {
     vector<string> result;
@@ -405,26 +473,13 @@ vector<string> read_input(string file_name) {
 
 ll part_1(vector<string> rows) {
     ll ans = 0;
-    vector<pair<ll, ll>> tiles;
-    for (string row : rows) {
-        vector<string> tile = split_by(row, ',');
-        ll x = stoll(tile[0]);
-        ll y = stoll(tile[1]);
-        tiles.push_back({x, y});
-    }
-    
-    int n = rows.size();
-    for (int i=0; i < n; ++i) {
-        for (int j=0; j < n; ++j) {
-            ans = max(ans, abs(tiles[i].first - tiles[j].first + 1)
-            *abs(tiles[i].second - tiles[j].second +1));
-        }
-    }
-
 
     return ans;
 }
 
+bool in_range(ll val, ll min_val, ll max_val) {
+    return val > min_val && val < max_val;
+}
 
 unsigned ll part_2(vector<string> rows) {
     ll ans = 0;
@@ -444,16 +499,16 @@ void solution() {
   vector<string> problem_input = read_input("input.txt");
 
   cout << "ex 1: " << part_1(example_input) << "\n";
-  //cout << "ex 2: " << part_2(example_input) << "\n";
+  cout << "ex 2: " << part_2(example_input) << "\n";
 
   cout << "part_1: " << part_1(problem_input) << "\n";
-  //cout << "part_2: " << part_2(problem_input) << "\n";
+  cout << "part_2: " << part_2(problem_input) << "\n";
 
 }
 
 int main() {
-  ios_base::sync_with_stdio(false);
-  cin.tie(NULL);
+  // ios_base::sync_with_stdio(false);
+  // cin.tie(NULL);
 
   int t = 1;
   // cin >> t;
@@ -462,4 +517,3 @@ int main() {
     solution();
   return 0;
 }
-

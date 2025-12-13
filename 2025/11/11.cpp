@@ -10,8 +10,8 @@ using namespace std;
 
 #define ll long long
 #define all(x) x.begin(), x.end()
-#define MIN(v) *min_element(all(v))
-#define MAX(v) *max_element(all(v))
+//#define MIN(v) *min_element(all(v))
+//#define MAX(v) *max_element(all(v))
 #define LB(c, x) distance((c).begin(), lower_bound(all(c), (x)))
 
 typedef __gnu_pbds::tree<int, __gnu_pbds::null_type, less<int>,
@@ -372,6 +372,74 @@ bool check_inter(const pt& a, const pt& b, const pt& c, const pt& d) {
            sgn(c.cross(d, a)) != sgn(c.cross(d, b));
 }
 
+// Ray-casting algorithm
+const double epsilon = numeric_limits<float>().epsilon();
+const numeric_limits<double> DOUBLE;
+const double MIN = DOUBLE.min();
+const double MAX = DOUBLE.max();
+
+struct Point { 
+    const double x, y; 
+
+    bool operator==(const Point &p) const {
+        return x == p.x && y == p.y;
+    }
+    bool operator!=(const Point &p) const {
+        return !operator==(p);
+    }
+};
+
+struct Edge {
+    const Point a, b;
+
+    bool operator()(const Point& p) const
+    {
+        if (a.y > b.y) return Edge{ b, a }(p);
+        if (p.y == a.y || p.y == b.y) return operator()({ p.x, p.y + epsilon });
+        if (p.y > b.y || p.y < a.y || p.x > max(a.x, b.x)) return false;
+        if (p.x < min(a.x, b.x)) return true;
+        auto blue = abs(a.x - p.x) > MIN ? (p.y - a.y) / (p.x - a.x) : MAX;
+        auto red = abs(a.x - b.x) > MIN ? (b.y - a.y) / (b.x - a.x) : MAX;
+        return blue >= red;
+    }
+    bool on_segment(const Point& p) const {
+        double cross = (p.x - a.x) * (b.y - a.y) - (p.y - a.y) * (b.x - a.x);
+        if (abs(cross) > epsilon) return false;
+
+        if (p.x < min(a.x, b.x) - epsilon || p.x > max(a.x, b.x) + epsilon) return false;
+        if (p.y < min(a.y, b.y) - epsilon || p.y > max(a.y, b.y) + epsilon) return false;
+        return true;
+    }
+
+    bool operator==(const Edge &rhs) const {
+        return (a == rhs.a && b == rhs.b) || (a == rhs.b && b == rhs.a);
+    }
+    bool operator!=(const Edge &rhs) const {
+        return !operator==(rhs);
+    }
+};
+
+struct Figure {
+    string  name;
+    vector<Edge> edges;
+
+    bool contains(const Point& p) const
+    {
+        auto c = 0;
+        for (auto e : edges) if (e(p)) c++;
+        return c % 2 != 0;
+    }
+
+    template<unsigned char W = 3>
+    void check(vector<Point>& points, ostream& os) const
+    {
+        os << "Is point inside figure " << name <<  '?' << endl;
+        for (auto p : points)
+            os << "  (" << setw(W) << p.x << ',' << setw(W) << p.y << "): " << boolalpha << contains(p) << endl;
+        os << endl;
+    }
+};
+
 
 vector<string> split_by(string s, char delimiter) {
     vector<string> result;
@@ -403,82 +471,156 @@ vector<string> read_input(string file_name) {
   return rows;
 }
 
-ll euclidian_norm(vector<ll> p1, vector<ll> p2) {
-    ll dist = 0;
-
-    assert(p1.size() == p2.size());
-    int n = p1.size();
-
-    for (int i=0; i < n; ++i) {
-        dist += pow((p1[i] - p2[i]), 2);
-    }
-    return dist;
-}
-
 ll part_1(vector<string> rows) {
     ll ans = 0;
-
-    // Feels like union find?
-    // We take each junction box
-    //
-    // But also focus on the actual problem.
-    // If we were to take the boxes, compute the distance
-    // from one box to everyother box,
-    // then we need to compute the distance metric only once,
-    // it does not change.
-    //
-    // Its still O(N^2).
-    // Code it first, then look into how to make it with union find?
-    int n = rows.size();
-
-    vector<vector<ll>> junction_boxes(n, vector<ll>(3));
-
-    for (int i=0; i < n; ++i) {
-        string row = rows[i];
-        vector<string> split_row = split_by(row, ',');
-
-        for (int j=0; j < 3; ++j) {
-            junction_boxes[i][j] = stoll(split_row[j]);
-        }
+    vector<pair<ll, ll>> tiles;
+    for (string row : rows) {
+        vector<string> tile = split_by(row, ',');
+        ll x = stoll(tile[0]);
+        ll y = stoll(tile[1]);
+        tiles.push_back({x, y});
     }
-
-    // Compute the distance from each box to each other one.
-    // N^2 = 1M comparisons.
-    vector<vector<pair<ll, ll>>> distances(n, vector<ll>(n-1));
-
-    // We could push this into a min heap.
-    // Then keep popping?
-    //
+    
+    int n = rows.size();
     for (int i=0; i < n; ++i) {
         for (int j=0; j < n; ++j) {
-            if (i == j) {
-                continue;
-            }
-            ll dist = euclidian_norm(junction_boxes[i], junction_boxes[j]);
-            distances[i][j] = {dist, j};
+            ans = max(ans, abs(tiles[i].first - tiles[j].first + 1)
+            *abs(tiles[i].second - tiles[j].second +1));
         }
     }
 
-    // So first I need the reverse,
-    // I need distance -> index map instead of index -> distance.
-    //
-    // Then I need to keep track of which indices are in a set.
-
-    // First code it without any sorting.
-
-    // vector<set<int>> ? How do I know which set to look for?
-
-    // Now we have for each junction box i=1,...,n the distance to everyother box.
-    // But what we want is to connect boxes and then keep track of which are already connected.
 
     return ans;
 }
 
+bool is_valid_tile(char tile) {
+    return (tile == 'O' || tile == '#');
+}
+
+bool in_range(ll val, ll min_val, ll max_val) {
+    return val > min_val && val < max_val;
+}
+
+bool strict_intersection(Point a, Point b, Point c, Point d) {
+    bool intersects = false;
+
+    return intersects;
+}
 
 unsigned ll part_2(vector<string> rows) {
     ll ans = 0;
 
+    vector<pair<ll, ll>> tiles;
+    for (string row : rows) {
+        vector<string> tile = split_by(row, ',');
+        ll x = stoll(tile[0]);
+        ll y = stoll(tile[1]);
+        tiles.push_back({x, y});
+    }
+    Figure grid;
 
+    for (int i=1; i < tiles.size(); ++i) {
+        Point p1 = {(double)tiles[i-1].second, (double)tiles[i-1].first};
+        Point p2 = {(double)tiles[i].second, (double)tiles[i].first};
+        grid.edges.push_back(Edge{p1, p2});
+    }
+    // Last to first
+    Point p1 = {(double)tiles[tiles.size()-1].second, (double)tiles[tiles.size()-1].first};
+    Point p2 = {(double)tiles[0].second, (double)tiles[0].first};
+    grid.edges.push_back(Edge{p1, p2});
+
+    for (int i=0; i < tiles.size(); ++i) {
+        for (int j=i+1; j < tiles.size(); ++j) {
+            Point p1 = {(double)tiles[i].second, (double)tiles[j].first};
+            Point p2 = {(double)tiles[j].second, (double)tiles[i].first};
+            Point tile_1 = {(double)tiles[i].second, (double)tiles[i].first};
+            Point tile_2 = {(double)tiles[j].second, (double)tiles[j].first};
+            
+            vector<Point> points = {tile_1, p1, tile_2, p2, tile_1};
+
+            bool p1_valid = grid.contains(p1);
+            if (!p1_valid) {
+                for (const auto& edge : grid.edges) {
+                    if (edge.on_segment(p1)) {
+                        p1_valid = true;
+                        break;
+                    }
+                }
+            }
+
+            bool p2_valid = grid.contains(p2);
+            if (!p2_valid) {
+                for (const auto& edge : grid.edges) {
+                    if (edge.on_segment(p2)) {
+                        p2_valid = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (p1_valid && p2_valid) {
+                bool none_inside = true;
+                ll min_x = min(tile_1.x, tile_2.x);
+                ll max_x = max(tile_1.x, tile_2.x);
+                ll min_y = min(tile_1.y, tile_2.y);
+                ll max_y = max(tile_1.y, tile_2.y);
+                
+                for (const auto tile : tiles) {
+                    ll t_x = tile.second;
+                    ll t_y = tile.first;
+                    if (in_range(t_x, min_x, max_x) && in_range(t_y, min_y, max_y)) {
+                        none_inside = false;
+                        break;
+                    }
+                }
+                
+                bool does_not_cross = true;
+                for (auto edge : grid.edges) {
+                    Point a = edge.a;
+                    Point b = edge.b;
+
+                    double target_xs[] = {(double)min_x, (double)max_x};
+                    for (double x : target_xs) {
+                        if (in_range(x, min(a.x, b.x), max(a.x, b.x))) {
+                            double t = (x - a.x) / (b.x - a.x);
+                            double y_hit = a.y + t * (b.y - a.y);
+
+                            if (in_range(y_hit, (double)min_y, (double)max_y)) {
+                                does_not_cross = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (!does_not_cross) {
+                        break;
+                    }
+
+                    double target_ys[] = {(double)min_y, (double)max_y};
+                    for (double y : target_ys) {
+                        if (in_range(y, min(a.y, b.y), max(a.y, b.y))) {
+                            double t = (y - a.y) / (b.y - a.y);
+                            double x_hit = a.x + t * (b.x - a.x);
+
+                            if (in_range(x_hit, (double)min_x, (double)max_x)) {
+                                does_not_cross = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (!does_not_cross) {
+                        break;
+                    }
+                }
+                ll side = abs(tile_2.x - tile_1.x) + 1ll;
+                ll height = abs(tile_2.y - tile_1.y) + 1ll;
+                ll area = side * height;
+                
+                if (does_not_cross && none_inside && area > ans) {
+                    ans = area;
+                }
+            }
+        }
+    }
 
     return ans;
 }
@@ -494,16 +636,16 @@ void solution() {
   vector<string> problem_input = read_input("input.txt");
 
   cout << "ex 1: " << part_1(example_input) << "\n";
-  // cout << "ex 2: " << part_2(example_input) << "\n";
+  cout << "ex 2: " << part_2(example_input) << "\n";
 
-  // cout << "part_1: " << part_1(problem_input) << "\n";
-  // cout << "part_2: " << part_2(problem_input) << "\n";
+  cout << "part_1: " << part_1(problem_input) << "\n";
+  cout << "part_2: " << part_2(problem_input) << "\n";
 
 }
 
 int main() {
-  ios_base::sync_with_stdio(false);
-  cin.tie(NULL);
+  // ios_base::sync_with_stdio(false);
+  // cin.tie(NULL);
 
   int t = 1;
   // cin >> t;
@@ -512,4 +654,3 @@ int main() {
     solution();
   return 0;
 }
-
