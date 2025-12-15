@@ -516,9 +516,54 @@ ll part_1(vector<string> rows) {
     return ans;
 }
 
+bool is_valid_path(unordered_set<string> path) {
+    return path.find("dac") != path.end() && path.find("fft") != path.end();
+}
 
 unsigned ll part_2(vector<string> rows) {
     ll ans = 0;
+
+    map<string, vector<string>> graph;
+
+    // Construct directed graph
+    for (string row : rows) {
+        auto parsed_row = parse_row(row);
+        graph[parsed_row.first] = parsed_row.second;
+    }
+
+    // Now perform bfs until at out.
+    // We now also queue up the path in a set of strings that we traverse.
+    // Then its simply to check if path when ends at out
+    // contains both "dac" and "fft".
+    queue<pair<string, unordered_set<string>>> q;
+    q.push({"svr", unordered_set<string>()});
+
+    unordered_set<string> searched;
+    searched.insert("svr");
+
+    unordered_set<string> reaches_out;
+
+    while (!q.empty()) {
+        auto queued = q.front();
+        q.pop();
+
+        string current = queued.first;
+        unordered_set<string> current_path = queued.second;
+
+        if ((current == "out" && is_valid_path(current_path))) {
+            ++ans;
+            continue;
+        }
+        current_path.insert(current);
+
+        for (string node : graph[current]) {
+            if (searched.find(node) == searched.end()) {
+                q.push({node, current_path});
+                // searched.insert(node);
+            }
+        }
+        searched.insert(current);
+    }
 
 
     return ans;
@@ -532,13 +577,14 @@ void solution() {
   // Solve it
 
   vector<string> example_input = read_input("example_input.txt");
+  vector<string> example_input_2 = read_input("example_input_2.txt");
   vector<string> problem_input = read_input("input.txt");
 
   cout << "ex 1: " << part_1(example_input) << "\n";
-  // cout << "ex 2: " << part_2(example_input) << "\n";
+  cout << "ex 2: " << part_2(example_input_2) << "\n";
 
   cout << "part_1: " << part_1(problem_input) << "\n";
-  // cout << "part_2: " << part_2(problem_input) << "\n";
+  cout << "part_2: " << part_2(problem_input) << "\n";
 
 }
 
