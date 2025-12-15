@@ -471,21 +471,44 @@ vector<string> read_input(string file_name) {
   return rows;
 }
 
+pair<string, vector<string>> parse_row(string row) {
+    vector<string> split_row = split_by(row, ' ');
+
+    string device = split_row[0];
+
+    vector<string> connections;
+    for (int i=1; i < split_row.size(); ++i) {
+        connections.push_back(split_row[i]);
+    }
+    return {device.substr(0, device.find(':')), connections};
+}
+
 ll part_1(vector<string> rows) {
     ll ans = 0;
-    vector<pair<ll, ll>> tiles;
+
+    map<string, vector<string>> graph;
+
+    // Construct directed graph
     for (string row : rows) {
-        vector<string> tile = split_by(row, ',');
-        ll x = stoll(tile[0]);
-        ll y = stoll(tile[1]);
-        tiles.push_back({x, y});
+        auto parsed_row = parse_row(row);
+        graph[parsed_row.first] = parsed_row.second;
     }
-    
-    int n = rows.size();
-    for (int i=0; i < n; ++i) {
-        for (int j=0; j < n; ++j) {
-            ans = max(ans, abs(tiles[i].first - tiles[j].first + 1)
-            *abs(tiles[i].second - tiles[j].second +1));
+
+    // Now perform bfs until at out.
+    queue<string> q;
+    q.push("you");
+
+    while (!q.empty()) {
+        string current = q.front();
+        q.pop();
+
+        if (current == "out") {
+            ++ans;
+            continue;
+        }
+
+        for (string node : graph[current]) {
+            q.push(node);
         }
     }
 
@@ -493,134 +516,10 @@ ll part_1(vector<string> rows) {
     return ans;
 }
 
-bool is_valid_tile(char tile) {
-    return (tile == 'O' || tile == '#');
-}
-
-bool in_range(ll val, ll min_val, ll max_val) {
-    return val > min_val && val < max_val;
-}
-
-bool strict_intersection(Point a, Point b, Point c, Point d) {
-    bool intersects = false;
-
-    return intersects;
-}
 
 unsigned ll part_2(vector<string> rows) {
     ll ans = 0;
 
-    vector<pair<ll, ll>> tiles;
-    for (string row : rows) {
-        vector<string> tile = split_by(row, ',');
-        ll x = stoll(tile[0]);
-        ll y = stoll(tile[1]);
-        tiles.push_back({x, y});
-    }
-    Figure grid;
-
-    for (int i=1; i < tiles.size(); ++i) {
-        Point p1 = {(double)tiles[i-1].second, (double)tiles[i-1].first};
-        Point p2 = {(double)tiles[i].second, (double)tiles[i].first};
-        grid.edges.push_back(Edge{p1, p2});
-    }
-    // Last to first
-    Point p1 = {(double)tiles[tiles.size()-1].second, (double)tiles[tiles.size()-1].first};
-    Point p2 = {(double)tiles[0].second, (double)tiles[0].first};
-    grid.edges.push_back(Edge{p1, p2});
-
-    for (int i=0; i < tiles.size(); ++i) {
-        for (int j=i+1; j < tiles.size(); ++j) {
-            Point p1 = {(double)tiles[i].second, (double)tiles[j].first};
-            Point p2 = {(double)tiles[j].second, (double)tiles[i].first};
-            Point tile_1 = {(double)tiles[i].second, (double)tiles[i].first};
-            Point tile_2 = {(double)tiles[j].second, (double)tiles[j].first};
-            
-            vector<Point> points = {tile_1, p1, tile_2, p2, tile_1};
-
-            bool p1_valid = grid.contains(p1);
-            if (!p1_valid) {
-                for (const auto& edge : grid.edges) {
-                    if (edge.on_segment(p1)) {
-                        p1_valid = true;
-                        break;
-                    }
-                }
-            }
-
-            bool p2_valid = grid.contains(p2);
-            if (!p2_valid) {
-                for (const auto& edge : grid.edges) {
-                    if (edge.on_segment(p2)) {
-                        p2_valid = true;
-                        break;
-                    }
-                }
-            }
-            
-            if (p1_valid && p2_valid) {
-                bool none_inside = true;
-                ll min_x = min(tile_1.x, tile_2.x);
-                ll max_x = max(tile_1.x, tile_2.x);
-                ll min_y = min(tile_1.y, tile_2.y);
-                ll max_y = max(tile_1.y, tile_2.y);
-                
-                for (const auto tile : tiles) {
-                    ll t_x = tile.second;
-                    ll t_y = tile.first;
-                    if (in_range(t_x, min_x, max_x) && in_range(t_y, min_y, max_y)) {
-                        none_inside = false;
-                        break;
-                    }
-                }
-                
-                bool does_not_cross = true;
-                for (auto edge : grid.edges) {
-                    Point a = edge.a;
-                    Point b = edge.b;
-
-                    double target_xs[] = {(double)min_x, (double)max_x};
-                    for (double x : target_xs) {
-                        if (in_range(x, min(a.x, b.x), max(a.x, b.x))) {
-                            double t = (x - a.x) / (b.x - a.x);
-                            double y_hit = a.y + t * (b.y - a.y);
-
-                            if (in_range(y_hit, (double)min_y, (double)max_y)) {
-                                does_not_cross = false;
-                                break;
-                            }
-                        }
-                    }
-                    if (!does_not_cross) {
-                        break;
-                    }
-
-                    double target_ys[] = {(double)min_y, (double)max_y};
-                    for (double y : target_ys) {
-                        if (in_range(y, min(a.y, b.y), max(a.y, b.y))) {
-                            double t = (y - a.y) / (b.y - a.y);
-                            double x_hit = a.x + t * (b.x - a.x);
-
-                            if (in_range(x_hit, (double)min_x, (double)max_x)) {
-                                does_not_cross = false;
-                                break;
-                            }
-                        }
-                    }
-                    if (!does_not_cross) {
-                        break;
-                    }
-                }
-                ll side = abs(tile_2.x - tile_1.x) + 1ll;
-                ll height = abs(tile_2.y - tile_1.y) + 1ll;
-                ll area = side * height;
-                
-                if (does_not_cross && none_inside && area > ans) {
-                    ans = area;
-                }
-            }
-        }
-    }
 
     return ans;
 }
@@ -636,10 +535,10 @@ void solution() {
   vector<string> problem_input = read_input("input.txt");
 
   cout << "ex 1: " << part_1(example_input) << "\n";
-  cout << "ex 2: " << part_2(example_input) << "\n";
+  // cout << "ex 2: " << part_2(example_input) << "\n";
 
   cout << "part_1: " << part_1(problem_input) << "\n";
-  cout << "part_2: " << part_2(problem_input) << "\n";
+  // cout << "part_2: " << part_2(problem_input) << "\n";
 
 }
 
