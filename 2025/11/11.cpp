@@ -213,6 +213,13 @@ void print(auto &&r) {
   cout << "\n";
 }
 
+void print_set(set<string> s) {
+    for (const auto& elem : s) {
+        std::cout << elem << " ";
+    }
+    std::cout << "\n";
+}
+
 struct custom_hash {
   static uint64_t splitmix64(uint64_t x) {
     // http://xorshift.di.unimi.it/splitmix64.c
@@ -516,9 +523,38 @@ ll part_1(vector<string> rows) {
     return ans;
 }
 
-bool is_valid_path(unordered_set<string> path) {
-    return path.find("dac") != path.end() && path.find("fft") != path.end();
+// Switch to DFS.
+
+
+ll get_num_reaching_node(map<string, vector<string>> &graph, string start_node, string end_node) {
+    queue<string> q;
+    q.push(start_node);
+    ll ans = 0;
+
+    unordered_set<string> searched;
+    searched.insert(start_node);
+
+    while (!q.empty()) {
+        auto queued = q.front();
+        string current = queued;
+        q.pop();
+
+        if (current == end_node) {
+            ++ans;
+            continue;
+        }
+
+        for (string node : graph[current]) {
+            if (searched.find(node) == searched.end()) {
+                q.push(node);
+            }
+        }
+        searched.insert(current);
+    }
+    return ans;
 }
+
+
 
 unsigned ll part_2(vector<string> rows) {
     ll ans = 0;
@@ -531,40 +567,31 @@ unsigned ll part_2(vector<string> rows) {
         graph[parsed_row.first] = parsed_row.second;
     }
 
-    // Now perform bfs until at out.
-    // We now also queue up the path in a set of strings that we traverse.
-    // Then its simply to check if path when ends at out
-    // contains both "dac" and "fft".
-    queue<pair<string, unordered_set<string>>> q;
-    q.push({"svr", unordered_set<string>()});
+    // Count is the number of paths reaching fft and then dac
+    // then from dac to "out"
+    //
+    // +
+    // The number of paths reaching dac and then fft
+    // then from fft to "out".
+    //
+    // So we can check the number of paths reaching 'fft' first
+    // multiply with number of paths from 'fft' to 'dac'.
+    // Multiply with the number of paths from 'dac' to 'out'
+    // +
+    //
+    // Check number of paths reaching 'dac' first
+    // multiply with the number of paths from 'dac' to 'fft'
+    // Multiply with the number of paths from 'fft' to 'out'
 
-    unordered_set<string> searched;
-    searched.insert("svr");
+    ll fft_to_dac = 0;
+    ll dac_to_out = 0;
 
-    unordered_set<string> reaches_out;
+    ll dac_first = 0;
+    ll dac_to_fft = 0;
+    ll fft_to_out = 0;
 
-    while (!q.empty()) {
-        auto queued = q.front();
-        q.pop();
-
-        string current = queued.first;
-        unordered_set<string> current_path = queued.second;
-
-        if ((current == "out" && is_valid_path(current_path))) {
-            ++ans;
-            continue;
-        }
-        current_path.insert(current);
-
-        for (string node : graph[current]) {
-            if (searched.find(node) == searched.end()) {
-                q.push({node, current_path});
-                // searched.insert(node);
-            }
-        }
-        searched.insert(current);
-    }
-
+    ll fft_first = get_num_reaching_node(graph, "svr", "fft");
+    cout << fft_first << "\n";
 
     return ans;
 }
