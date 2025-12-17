@@ -524,33 +524,33 @@ ll part_1(vector<string> rows) {
 }
 
 // Switch to DFS.
-
-
-ll get_num_reaching_node(map<string, vector<string>> &graph, string start_node, string end_node) {
-    queue<string> q;
-    q.push(start_node);
+ll dfs(map<string, vector<string>> &graph, string current, string end_node, map<string, ll> &seen) {
     ll ans = 0;
-
-    unordered_set<string> searched;
-    searched.insert(start_node);
-
-    while (!q.empty()) {
-        auto queued = q.front();
-        string current = queued;
-        q.pop();
-
-        if (current == end_node) {
-            ++ans;
-            continue;
-        }
-
-        for (string node : graph[current]) {
-            if (searched.find(node) == searched.end()) {
-                q.push(node);
-            }
-        }
-        searched.insert(current);
+    if (current == end_node) {
+        ++ans;
+        return ans;
     }
+    
+    for (string node : graph[current]) {
+        if (seen.find(node) == seen.end()) {
+            // Here I would want to only take valid_nodes if the node searched
+            // did find end_node.
+            // For that either search through all valid_nodes
+            // or use a boolean to say it did reach...
+            seen[node] = dfs(graph, node, end_node, seen);
+        }
+        ans += seen[node];
+    }
+    return ans;
+}
+
+
+ll get_nodes_reaching_node(map<string, vector<string>> &graph, string start_node, string end_node) {
+    ll ans;
+
+    map<string, ll> seen;
+    ans = dfs(graph, start_node, end_node, seen);
+
     return ans;
 }
 
@@ -582,17 +582,19 @@ unsigned ll part_2(vector<string> rows) {
     // Check number of paths reaching 'dac' first
     // multiply with the number of paths from 'dac' to 'fft'
     // Multiply with the number of paths from 'fft' to 'out'
-
-    ll fft_to_dac = 0;
-    ll dac_to_out = 0;
-
-    ll dac_first = 0;
-    ll dac_to_fft = 0;
-    ll fft_to_out = 0;
-
-    ll fft_first = get_num_reaching_node(graph, "svr", "fft");
+    
+    ll fft_first = get_nodes_reaching_node(graph, "svr", "fft");
     cout << fft_first << "\n";
-
+    ll dac_first = get_nodes_reaching_node(graph, "svr", "dac");
+    
+    ll fft_to_out = get_nodes_reaching_node(graph, "fft","out");
+    ll dac_to_out = get_nodes_reaching_node(graph, "dac", "out");
+    
+    ll fft_to_dac = get_nodes_reaching_node(graph, "fft", "dac");
+    ll dac_to_fft = get_nodes_reaching_node(graph, "dac", "fft");
+    
+    ans = fft_first * fft_to_dac * dac_to_out + dac_first * dac_to_fft *fft_to_out;
+    
     return ans;
 }
 
