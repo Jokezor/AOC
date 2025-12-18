@@ -457,6 +457,16 @@ vector<string> split_by(string s, char delimiter) {
     return result;
 }
 
+string remove_char(string s, char to_remove) {
+    string ans = "";
+    for (char c : s) {
+        if (c != to_remove) {
+            ans += c;
+        }
+    }
+    return ans;
+}
+
 vector<string> read_input(string file_name) {
   vector<string> rows;
   ifstream input(file_name);
@@ -471,14 +481,115 @@ vector<string> read_input(string file_name) {
   return rows;
 }
 
-ll part_1(vector<string> rows) {
+
+ll extract_diagram(string row) {
     ll ans = 0;
+    string start = "";
+    for (int i=1; i < row.find("]"); ++i) {
+        start += row[i];
+    }
+    for (int i=0; i < start.length(); ++i) {
+        if (start[i] == '#') {
+            ans |= (1 << i);
+        }
+    }
+    return ans;
+}
+
+vector<ll> extract_buttons(string row) {
+    /*
+     * Takes the string, stripping unnecessary info.
+     * Takes out the buttons as bits set to a 64 bit integer.
+     * Supports maximum 64 lights.
+     * */
+    vector<ll> ans;
+
+    string start = "";
+    ll button = 0;
+
+    string sub_string = row.substr(row.find("("), row.find_last_of(")") - row.find("("));
+    sub_string = remove_char(sub_string, '(');
+    sub_string = remove_char(sub_string, ')');
+    vector<string> buttons = split_by(sub_string, ' ');
+
+    for (string button : buttons) {
+        ll button_num = 0;
+        string curr = "";
+        for (char c : button) {
+            if (c == ',') {
+                button_num |= (1 << stoll(curr));
+                curr = "";
+            }
+            else {
+                curr += c;
+            }
+        }
+        button_num |= (1 << stoll(curr));
+        ans.push_back(button_num);
+    }
 
     return ans;
 }
 
-bool in_range(ll val, ll min_val, ll max_val) {
-    return val > min_val && val < max_val;
+bool press_button(ll diagram, vector<ll> buttons, int button, int max_tries, int tries) {
+    if (button > buttons.size()) {
+        return false;
+    }
+    // We have exhausted the tries.
+    if (tries > max_tries) {
+        return false;
+    }
+    // If the diagram when pressed the button is equal, then we have found one
+    if (diagram == 0) {
+        return true;
+    }
+    for (int i=button; i < buttons.size(); ++i) {
+        bool correct_buttons = press_button(diagram ^ buttons[i], buttons, i+1, max_tries, tries+1);
+        if (correct_buttons) {
+            return true;
+        }
+    }
+    return false;
+}
+
+ll fewest_button_presses(ll diagram, vector<ll> buttons) {
+    // We can't press more than all buttons.
+    ll ans = buttons.size();
+
+    for (int i=1; i <= buttons.size(); ++i) {
+        bool correct_buttons = false;
+        for (int j=0; j < buttons.size(); ++j) {
+            correct_buttons = press_button(diagram, buttons, j, i, 0);
+            if (correct_buttons) {
+                break;
+            }
+        }
+        if (correct_buttons) {
+            ans = i;
+            break;
+        }
+    }
+    return ans;
+}
+
+ll part_1(vector<string> rows) {
+    ll ans = 0;
+
+    // Use a 64 bit integer, each light is a bit.
+    for (string row : rows) {
+        ll diagram = extract_diagram(row);
+        vector<ll> buttons = extract_buttons(row);
+
+        ll button_presses = fewest_button_presses(diagram, buttons);
+        ans += button_presses;
+        // Now simply xor buttons until we match the diagram?
+        // KISS, how to test all combinations?
+        // Then we need nestled for loops?
+        // But we need dynamic, so its recursive.
+    }
+    
+
+    return ans;
 }
 
 unsigned ll part_2(vector<string> rows) {
@@ -499,10 +610,10 @@ void solution() {
   vector<string> problem_input = read_input("input.txt");
 
   cout << "ex 1: " << part_1(example_input) << "\n";
-  cout << "ex 2: " << part_2(example_input) << "\n";
+  // cout << "ex 2: " << part_2(example_input) << "\n";
 
   cout << "part_1: " << part_1(problem_input) << "\n";
-  cout << "part_2: " << part_2(problem_input) << "\n";
+  // cout << "part_2: " << part_2(problem_input) << "\n";
 
 }
 
