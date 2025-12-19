@@ -707,8 +707,8 @@ ll button_presses_needed_2(vector<vector<int>> buttons, vector<int> joltage_requ
     for (int j : joltage_requirements) {
         remaining_req += j;
     }
-    print(joltage_requirements);
-    // assert(remaining_req == 0);
+    // print(joltage_requirements);
+    assert(remaining_req == 0);
 
     return ans;
 }
@@ -721,6 +721,7 @@ unsigned ll part_2(vector<string> rows) {
         vector<int> joltage_requirements = extract_joltage_requirements(row);
 
         ll button_presses = button_presses_needed_2(buttons, joltage_requirements);
+        cout << button_presses << "\n";
         ans += button_presses;
     }
 
