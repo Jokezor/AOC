@@ -592,8 +592,137 @@ ll part_1(vector<string> rows) {
     return ans;
 }
 
+vector<vector<int>> extract_buttons_2(string row) {
+    vector<vector<int>> ans;
+
+    string start = "";
+
+    string sub_string = row.substr(row.find("("), row.find_last_of(")") - row.find("("));
+    sub_string = remove_char(sub_string, '(');
+    sub_string = remove_char(sub_string, ')');
+    vector<string> buttons = split_by(sub_string, ' ');
+
+    for (string button : buttons) {
+        vector<int> button_arr;
+        string curr = "";
+        for (char c : button) {
+            if (c == ',') {
+                button_arr.push_back(stoll(curr));
+                curr = "";
+            }
+            else {
+                curr += c;
+            }
+        }
+        button_arr.push_back(stoll(curr));
+        ans.push_back(button_arr);
+    }
+
+    return ans;
+}
+
+vector<int> extract_joltage_requirements(string row) {
+    vector<int> ans;
+
+    string sub_string = row.substr(row.find("{"), row.find_last_of("}") - row.find("{"));
+    sub_string = remove_char(sub_string, '{');
+    sub_string = remove_char(sub_string, '}');
+
+    string curr = "";
+    for (char c : sub_string) {
+        if (c == ',') {
+            ans.push_back(stoll(curr));
+            curr = "";
+        }
+        else {
+            curr += c;
+        }
+    }
+    ans.push_back(stoll(curr));
+
+    return ans;
+}
+
+ll get_button_value(vector<int> button, vector<int> C) {
+    ll value = 0;
+
+    for (int e : button) {
+        value += C[e];
+    }
+
+    return value;
+}
+
+ll get_button_iterations(vector<int> button, vector<int> C) {
+    ll iterations = MAX_VAL;
+
+    for (int e : button) {
+        iterations = min(iterations, (ll)C[e]);
+    }
+
+    return iterations;
+}
+
+ll button_presses_needed_2(vector<vector<int>> buttons, vector<int> joltage_requirements) {
+    ll ans = 0;
+
+    ll max_iterations = 0;
+    for (int j : joltage_requirements) {
+        max_iterations += j;
+    }
+
+    while (max_iterations > 0) {
+        ll best_button_value = 0;
+        ll best_button_iterations = 0;
+        ll best_button = 0;
+
+        for (int i=0; i < buttons.size(); ++i) {
+            vector<int> button = buttons[i];
+
+            ll button_value = get_button_value(button, joltage_requirements);
+            ll button_iterations = get_button_iterations(button, joltage_requirements);
+
+            if (button_value > best_button_value && button_iterations > 0) {
+                best_button_value = button_value;
+                best_button_iterations = button_iterations;
+                best_button = i;
+            }
+        }
+
+        for (int e : buttons[best_button]) {
+            joltage_requirements[e] -= best_button_iterations;
+        }
+
+        max_iterations -= best_button_iterations;
+        ans += best_button_iterations;
+
+        if (best_button_iterations == 0) {
+            break;
+        }
+    }
+
+    // Assert that joltage_requirements is 0
+
+    ll remaining_req = 0;
+    for (int j : joltage_requirements) {
+        remaining_req += j;
+    }
+    print(joltage_requirements);
+    // assert(remaining_req == 0);
+
+    return ans;
+}
+
 unsigned ll part_2(vector<string> rows) {
     ll ans = 0;
+
+    for (string row : rows) {
+        vector<vector<int>> buttons = extract_buttons_2(row);
+        vector<int> joltage_requirements = extract_joltage_requirements(row);
+
+        ll button_presses = button_presses_needed_2(buttons, joltage_requirements);
+        ans += button_presses;
+    }
 
 
     return ans;
@@ -610,7 +739,7 @@ void solution() {
   vector<string> problem_input = read_input("input.txt");
 
   cout << "ex 1: " << part_1(example_input) << "\n";
-  // cout << "ex 2: " << part_2(example_input) << "\n";
+  cout << "ex 2: " << part_2(example_input) << "\n";
 
   cout << "part_1: " << part_1(problem_input) << "\n";
   // cout << "part_2: " << part_2(problem_input) << "\n";
